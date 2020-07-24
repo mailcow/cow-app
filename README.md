@@ -1,1 +1,1 @@
-#MAILCOW
+# mailcow-app repo
