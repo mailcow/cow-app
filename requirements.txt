@@ -1,0 +1,5 @@
+flask==1.1.2
+flask-sqlalchemy==2.2.4
+mysqlclient==2.0.1
+flask-restful==0.3.8
+flask-jwt-extended==3.24.1
