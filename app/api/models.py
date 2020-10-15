@@ -14,7 +14,9 @@ class Base(db.Model):
     date_modified = db.Column(db.DateTime,  default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
 class Account(Base):
-    user = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    __tablename__ = 'account'
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     email = db.Column(db.String(128), nullable=False, unique=True)
     password = db.Column(db.String(192),  nullable=False)
     is_main = db.Column(db.Boolean,  default=False)
@@ -32,7 +34,7 @@ class User(Base):
     name = db.Column(db.String(128), nullable=True)
     surname = db.Column(db.String(128), nullable=True)
     username = db.Column(db.String(128), nullable=False, unique=True)
-    accounts = db.relationship('Accounts', backref="user", lazy=True)
+    accounts = db.relationship('Account', backref="user", lazy=True)
 
     def __repr__(self):
         return '<User %s %s>' % (self.name, self.surname)
