@@ -41,4 +41,4 @@ class User(Base):
 
     @property
     def main_account(self):
-        return self.accounts.query.filter_by(is_main=True).one()
+        return Account.query.filter_by(user_id = self.id).filter_by(is_main=True).one()

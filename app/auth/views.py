@@ -16,35 +16,40 @@ class LoginApi(Resource):
     def post(self):
 
         body = request.get_json()
+
         email = body.get('email')
         password = body.get('password')
 
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(username=email).first()
         smtp_status, res_code = login_smtp(email, password)
 
         if smtp_status:
 
             if user:
-                check_password = user.check_password(password)
+                check_password = user.main_account.check_password(password)
 
-                # Changed email password
+                # Changed email password & update sync-engine password
                 if not check_password and res_code == -1:
                     updated = update_user_account(email, password)
 
                     if not updated:
                         resp =  jsonify({'status': False, 'code': 'MC-100', 'content': 'Something went be wrong, please try again later'})
-                        return resp, 400
+                        resp.status_code = 400
+                        return resp
 
             else:
+                # Create sync-engine account
                 created = create_user_account(email, password)
 
                 if not created:
                     resp =  jsonify({'status': False, 'code': 'MC-101', 'content': 'Something went be wrong, please try again later'})
-                    return resp, 400
+                    resp.status_code = 400
+                    return resp
 
         else:
             resp =  jsonify({'status': False, 'code': 'MC-102', 'content': 'User credentials wrong or Imap server unreacheable'})
-            return resp, 401
+            resp.status_code = 401
+            return resp
 
         expires = datetime.timedelta(days=7)
         access_token = create_access_token(identity=email, expires_delta=expires)

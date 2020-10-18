@@ -10,10 +10,10 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # Database
 DB = os.environ.get('DATABASE_TYPE','mysql')
-DB_HOST = os.environ.get('DATABASE_HOST','localhost')
-DB_PORT = os.environ.get('DATABASE_PORT','3306')
-DB_USER = os.environ.get('DATABASE_USER','root')
-DB_PASSWORD = os.environ.get('DATABASE_PASSWD','123')
+DB_HOST = os.environ.get('DATABASE_HOST','127.0.0.1')
+DB_PORT = os.environ.get('DATABASE_PORT','3406')
+DB_USER = os.environ.get('DATABASE_USER','mailcow')
+DB_PASSWORD = os.environ.get('DATABASE_PASSWD','cFQf1p5ZqJHMBNkBgark3vRZXiPb')
 DB_NAME = os.environ.get('DATABASE_NAME', 'mailcow')
 
 IS_SSL = (os.environ.get('SSL', False) == "true")
@@ -23,7 +23,7 @@ JWT_ACCESS_COOKIE_PATH = '/'
 JWT_REFRESH_COOKIE_PATH = '/'
 JWT_COOKIE_CSRF_PROTECT = False
 JWT_CSRF_IN_COOKIES = False
-JWT_SECRET_KEY = os.environ.get('SECRET_KEY', 'change_me')
+JWT_SECRET_KEY = os.environ.get('SECRET_KEY', 'CHANGE_ME')
 JWT_BLACKLIST_ENABLED = True
 JWT_COOKIE_SECURE = IS_SSL # Only allow JWT cookies to be sent over https. In production, this should likely be True
 JWT_TOKEN_LOCATION =  ('headers', 'cookies')
@@ -38,6 +38,8 @@ SMTPS_PORT = os.environ.get('SMTPS_PORT', 465)
 IMAP_HOST = os.environ.get('IMAP_HOST', 'dovecot')
 IMAP_PORT = os.environ.get('IMAP_PORT', 143)
 IMAPS_PORT = os.environ.get('IMAPS_PORT', 993)
+
+SYNC_ENGINE_API_URL = 'http://syncengine:5555'
 
 if DB == 'sqlite':
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, DB_NAME + '.db')

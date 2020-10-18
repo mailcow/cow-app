@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 from sqlalchemy.orm.exc import NoResultFound
@@ -5,14 +6,17 @@ from flask_jwt_extended import decode_token
 
 from app import app, db, jwt
 from app.auth.exceptions import TokenNotFound
-from app.auth.services import sync_engine_create_account
+from app.auth.services import sync_engine_account_dispatch
 from app.auth.models import Token
+from app.api.models import User, Account
+
+import hashlib
 
 def login_smtp(username, password):
     import smtplib
 
     if app.config['IS_SSL']:
-        server = smtplib.SMTP_SSL(app.config['SMTP_HOST'], app.config['SMTP_PORT'])
+        server = smtplib.SMTP_SSL(app.config['SMTP_HOST'], app.config['SMTPS_PORT'])
     else:
         server = smtplib.SMTP(app.config['SMTP_HOST'], app.config['SMTP_PORT'])
 
@@ -30,15 +34,31 @@ def login_smtp(username, password):
         return False, -2
 
 def create_user_account (username, password):
-    response = sync_engine_create_account(username, password)
+    status, user_data = sync_engine_account_dispatch(username, password)
 
-    if response.status_code == 200:
-        account = response.json()
+    if status:
+        user = User(username=username)
+        main_account = Account(email=username, password=hashlib.sha256(password.encode()).hexdigest(), is_main=True, uuid=user_data['account_id'])
+
+        user.accounts.append(main_account)
+        db.session.add(user)
+        db.session.commit()
+
+        return True
 
     return False
 
 def update_user_account (username, password):
-    pass
+
+    status, user_data = sync_engine_account_dispatch(username, password, True)
+
+    if status:
+        main_account = Account.query.filter_by(email=username).first()
+        main_account.password = hashlib.sha256(password.encode()).hexdigest()
+        db.session.commit()
+        return True
+
+    return False
 
 @jwt.token_in_blacklist_loader
 def check_if_token_revoked(decoded_token):
