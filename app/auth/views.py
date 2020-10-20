@@ -54,12 +54,13 @@ class LoginApi(Resource):
         expires = datetime.timedelta(days=7)
         access_token = create_access_token(identity=email, expires_delta=expires)
         refresh_token = create_refresh_token(identity=email)
+        expires_date = datetime.datetime.now() + expires
 
         # Store the tokens in our store with a status of not currently revoked.
         add_token_to_database(access_token)
         add_token_to_database(refresh_token)
 
-        resp =  jsonify({'status': True, 'access_token': access_token, 'refresh_token': refresh_token})
+        resp =  jsonify({'status': True, 'access_token': access_token, 'refresh_token': refresh_token, 'expires': str(expires_date)})
         set_access_cookies(resp, access_token)
         set_refresh_cookies(resp, refresh_token)
         resp.status_code = 201
