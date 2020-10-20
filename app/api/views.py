@@ -13,7 +13,7 @@ class MailApi(Resource):
     def get(self, api):
         return Response({'test': 'success', 'status': True}, mimetype="application/json", status=200)
 
-class AccountApi(Response):
+class AccountApi(Resource):
 
     @jwt_required
     def get(self, api):
