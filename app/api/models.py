@@ -40,5 +40,12 @@ class User(Base):
         return '<User %s %s>' % (self.name, self.surname)
 
     @property
+    def get_accounts(self):
+        ret = []
+        for account in self.accounts:
+            ret.append({"email": account.email, "id": account.id, "is_main": account.is_main})
+        return ret
+    
+    @property
     def main_account(self):
         return Account.query.filter_by(user_id = self.id).filter_by(is_main=True).one()

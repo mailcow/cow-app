@@ -2,7 +2,7 @@
 # Ahmet Küçük <ahmetkucuk4@gmail.com>
 # Zekeriya Akgül <zkry.akgul@gmail.com>
 
-from flask import Response, Blueprint, request, jsonify
+from flask import Response, Blueprint, request, jsonify, session
 from flask_jwt_extended import create_access_token, create_refresh_token
 
 from app.api.models import User
@@ -15,10 +15,20 @@ class LoginApi(Resource):
 
     def post(self):
 
+        if not request.is_json:
+            resp = jsonify({'status': False, "content": "Missing JSON in request"})
+            resp.status_code = 400
+            return resp
+
         body = request.get_json()
 
-        email = body.get('email')
-        password = body.get('password')
+        email = body.get('email', '')
+        password = body.get('password', '')
+
+        if not email or not password:
+            resp = jsonify({'status': False, 'code': 'MC-100', 'content': 'User credentials wrong'})
+            resp.status_code = 400
+            return resp
 
         user = User.query.filter_by(username=email).first()
         smtp_status, res_code = login_smtp(email, password)
@@ -33,7 +43,7 @@ class LoginApi(Resource):
                     updated = update_user_account(email, password)
 
                     if not updated:
-                        resp =  jsonify({'status': False, 'code': 'MC-100', 'content': 'Something went be wrong, please try again later'})
+                        resp =  jsonify({'status': False, 'code': 'MC-101', 'content': 'Something went be wrong, please try again later'})
                         resp.status_code = 400
                         return resp
 
@@ -42,25 +52,29 @@ class LoginApi(Resource):
                 created = create_user_account(email, password)
 
                 if not created:
-                    resp =  jsonify({'status': False, 'code': 'MC-101', 'content': 'Something went be wrong, please try again later'})
+                    resp =  jsonify({'status': False, 'code': 'MC-102', 'content': 'Something went be wrong, please try again later'})
                     resp.status_code = 400
                     return resp
 
         else:
-            resp =  jsonify({'status': False, 'code': 'MC-102', 'content': 'User credentials wrong or Imap server unreacheable'})
+            resp =  jsonify({'status': False, 'code': 'MC-103', 'content': 'User credentials wrong or Imap server unreacheable'})
             resp.status_code = 401
             return resp
+
 
         expires = datetime.timedelta(days=7)
         access_token = create_access_token(identity=email, expires_delta=expires)
         refresh_token = create_refresh_token(identity=email)
         expires_date = datetime.datetime.now() + expires
+        session['account_id'] = user.main_account.id
 
         # Store the tokens in our store with a status of not currently revoked.
         add_token_to_database(access_token)
         add_token_to_database(refresh_token)
 
-        resp =  jsonify({'status': True, 'access_token': access_token, 'refresh_token': refresh_token, 'expires': str(expires_date)})
+        resp =  jsonify({'status': True, 'access_token': access_token, 'refresh_token': refresh_token, 'expires': str(expires_date),
+                         'user_accounts': user.get_accounts})
+
         set_access_cookies(resp, access_token)
         set_refresh_cookies(resp, refresh_token)
         resp.status_code = 201
@@ -104,3 +118,4 @@ class LogoutApi(Resource):
         resp = Response({'logout': 'success', 'status': True}, mimetype="application/json", status=200)
         unset_jwt_cookies(resp)
         return resp
+
