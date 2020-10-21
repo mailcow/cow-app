@@ -8,6 +8,9 @@ import os
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+# Flask settings
+SECRET_KEY = 'fgh7Ax809A8w16cv89as1ygASf7y8ASfg78g234'
+
 # Database
 DB = os.environ.get('DATABASE_TYPE','mysql')
 DB_HOST = os.environ.get('DATABASE_HOST','127.0.0.1')
