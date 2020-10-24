@@ -43,7 +43,7 @@ IMAP_PORT = os.environ.get('IMAP_PORT', 143)
 IMAPS_PORT = os.environ.get('IMAPS_PORT', 993)
 
 # Sycn Engine
-SYNC_ENGINE_WEB_PROTO = os.environ.get('SYNC_ENGINE_HOST', 'http')
+SYNC_ENGINE_WEB_PROTO = os.environ.get('SYNC_ENGINE_WEB_PROTO', 'http')
 SYNC_ENGINE_HOST = os.environ.get('SYNC_ENGINE_HOST', 'syncengine')
 SYNC_ENGINE_PORT = os.environ.get('SYNC_ENGINE_PORT', '5555')
 SYNC_ENGINE_API_URL = "{}://{}:{}".format(SYNC_ENGINE_WEB_PROTO, SYNC_ENGINE_HOST, SYNC_ENGINE_PORT)
