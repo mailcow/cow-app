@@ -14,7 +14,7 @@ SECRET_KEY = 'fgh7Ax809A8w16cv89as1ygASf7y8ASfg78g234'
 # Database
 DB = os.environ.get('DATABASE_TYPE','mysql')
 DB_HOST = os.environ.get('DATABASE_HOST','127.0.0.1')
-DB_PORT = os.environ.get('DATABASE_PORT','3406')
+DB_PORT = os.environ.get('DATABASE_PORT','3306')
 DB_USER = os.environ.get('DATABASE_USER','mailcow')
 DB_PASSWORD = os.environ.get('DATABASE_PASSWD','cFQf1p5ZqJHMBNkBgark3vRZXiPb')
 DB_NAME = os.environ.get('DATABASE_NAME', 'mailcow')
@@ -42,7 +42,11 @@ IMAP_HOST = os.environ.get('IMAP_HOST', 'dovecot')
 IMAP_PORT = os.environ.get('IMAP_PORT', 143)
 IMAPS_PORT = os.environ.get('IMAPS_PORT', 993)
 
-SYNC_ENGINE_API_URL = 'http://syncengine:5555'
+# Sycn Engine
+SYNC_ENGINE_WEB_PROTO = os.environ.get('SYNC_ENGINE_HOST', 'http')
+SYNC_ENGINE_HOST = os.environ.get('SYNC_ENGINE_HOST', 'syncengine')
+SYNC_ENGINE_PORT = os.environ.get('SYNC_ENGINE_PORT', '5555')
+SYNC_ENGINE_API_URL = "{}://{}:{}".format(SYNC_ENGINE_WEB_PROTO, SYNC_ENGINE_HOST, SYNC_ENGINE_PORT)
 
 if DB == 'sqlite':
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, DB_NAME + '.db')
