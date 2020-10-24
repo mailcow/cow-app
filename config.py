@@ -19,8 +19,6 @@ DB_USER = os.environ.get('DATABASE_USER','mailcow')
 DB_PASSWORD = os.environ.get('DATABASE_PASSWD','cFQf1p5ZqJHMBNkBgark3vRZXiPb')
 DB_NAME = os.environ.get('DATABASE_NAME', 'mailcow')
 
-IS_SSL = (os.environ.get('SSL', False) == "true")
-
 # Authentication 
 JWT_ACCESS_COOKIE_PATH = '/'
 JWT_REFRESH_COOKIE_PATH = '/'
@@ -41,6 +39,9 @@ SMTPS_PORT = os.environ.get('SMTPS_PORT', 465)
 IMAP_HOST = os.environ.get('IMAP_HOST', 'dovecot')
 IMAP_PORT = os.environ.get('IMAP_PORT', 143)
 IMAPS_PORT = os.environ.get('IMAPS_PORT', 993)
+
+# IMAP/SMTP Connection Type
+IS_SSL = (os.environ.get('SSL', False) == "true")
 
 # Sycn Engine
 SYNC_ENGINE_WEB_PROTO = os.environ.get('SYNC_ENGINE_WEB_PROTO', 'http')
