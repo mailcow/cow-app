@@ -1,6 +1,11 @@
 # *-* coding: utf-8 *-*
 # Ahmet Küçük <ahmetkucuk4@gmail.com>
 # Zekeriya Akgül <zkry.akgul@gmail.com>
+try:
+	from dotenv import load_dotenv
+	load_dotenv()
+except Exception as e:
+	print("Someting went wrong when try to load environments form .env file. Skipping...")
 
 DEBUG = True
 

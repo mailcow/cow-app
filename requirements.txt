@@ -5,3 +5,4 @@ flask-restful==0.3.8
 flask-jwt-extended==3.24.1
 Flask-Cors==3.0.9
 requests==2.22.0
+python-dotenv==0.14.0
