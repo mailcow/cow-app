@@ -3,3 +3,4 @@ flask-sqlalchemy==2.4.4
 mysqlclient==2.0.1
 flask-restful==0.3.8
 flask-jwt-extended==3.24.1
+Flask-Cors==3.0.9
