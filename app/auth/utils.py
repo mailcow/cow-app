@@ -15,7 +15,7 @@ import hashlib
 def login_smtp(username, password):
     import smtplib
 
-    if app.config['IS_SSL']:
+    if app.config['SMTP_SEC_CONN']:
         server = smtplib.SMTP_SSL(app.config['SMTP_HOST'], app.config['SMTPS_PORT'])
     else:
         server = smtplib.SMTP(app.config['SMTP_HOST'], app.config['SMTP_PORT'])

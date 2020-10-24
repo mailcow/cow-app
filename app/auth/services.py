@@ -12,18 +12,26 @@ HEADERS = {
 }
 
 def _get_genric_data (email, password, imp_host = None, imp_port = None, smtp_host = None, smtp_port = None, ac_type = "generic"):
-    IS_SSL = app.config['IS_SSL']
+    # Get connection security options
+    SMTP_SEC_CONN = app.config['SMTP_SEC_CONN']
+    IMAP_SEC_CONN = app.config['IMAP_SEC_CONN']
 
-    if IS_SSL:
-        imp_host = (imp_host or app.config['IMAP_HOST'])
-        imp_port = (imp_port or app.config['IMAPS_PORT'])
-        smtp_host = (smtp_host or app.config['SMTP_HOST'])
+    # Get host settings
+    imp_host = (imp_host or app.config['IMAP_HOST'])
+    smtp_host = (smtp_host or app.config['SMTP_HOST'])
+
+    # Set SMTP port for given connection security options
+    if SMTP_SEC_CONN:
         smtp_port = (smtp_port or app.config['SMTPS_PORT'])
     else:
-        imp_host = (imp_host or app.config['IMAP_HOST'])
-        imp_port = (imp_port or app.config['IMAP_PORT'])
-        smtp_host = (smtp_host or app.config['SMTP_HOST'])
         smtp_port = (smtp_port or app.config['SMTP_PORT'])
+
+    # Set IMAP port for given connection security options
+    if IMAP_SEC_CONN:     
+        imp_port = (imp_port or app.config['IMAPS_PORT'])
+    else:
+        imp_port = (imp_port or app.config['IMAP_PORT'])
+        
 
     # Type: generic | gmail | microsoft
 
