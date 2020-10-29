@@ -47,9 +47,7 @@ def create_user_account (username, password):
         user.accounts.append(main_account)
         db.session.add(user)
         db.session.commit()
-
         return True
-
     return False
 
 def update_user_account (username, password):

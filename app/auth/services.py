@@ -13,7 +13,7 @@ HEADERS = {
 
 def _get_account_data_for_generic_account (data):
     # Get basic account information
-    email = data.get('email_address', False)
+    email = data.get('email', False)
     password = data.get('password', False)
 
     # Get connection security options
@@ -52,7 +52,7 @@ def _get_account_data_for_generic_account (data):
     })
 
 def _get_account_data_for_google_account(data):
-    email_address = data.get("email_address")
+    email_address = data.get("email")
     scopes = data.get("scopes", "")
     client_id = data.get("client_id")
 
@@ -76,7 +76,7 @@ def _get_account_data_for_google_account(data):
 
 
 def _get_account_data_for_microsoft_account(data):
-    email_address = data.get("email_address")
+    email_address = data.get("email")
     scopes = data.get("scopes")
     client_id = data.get("client_id")
 
@@ -114,6 +114,7 @@ def sync_engine_update_account (user_id, data):
         return False, None
 
 def sync_engine_create_account(data):
+    print("DATA>>> ", data)
     response = requests.post(URL + '/accounts', data=data, headers=HEADERS)
 
     if response.status_code == 200:
@@ -139,9 +140,9 @@ def sync_engine_account_dispatch (owner_mail, account_type, data, update = False
         elif account_type == "microsoft":
             payload = _get_account_data_for_microsoft_account (data)
 
-    user = _get_user_by_email(owner_mail)
+    user = _get_user_by_email(json.loads(payload)["email_address"])
 
-    if user and user.has_account(data.get("email")):
+    if user:
         if update:
             # Update user for changed password
             return sync_engine_update_account(user['account_id'], payload)
