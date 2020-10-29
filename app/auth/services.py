@@ -125,20 +125,12 @@ def sync_engine_create_account(data):
         return False, None
 
 def sync_engine_account_dispatch (owner_mail, account_type, data, update = False):
-    if data:
-        if account_type == "generic":
-            payload = _get_account_data_for_generic_account (data)
-        elif account_type == "gmail":
-            payload = _get_account_data_for_google_account (data)
-        elif account_type == "microsoft":
-            payload = _get_account_data_for_microsoft_account (data)
-    else:
-        if account_type == "generic":
-            payload = _get_account_data_for_generic_account (data)
-        elif account_type == "gmail":
-            payload = _get_account_data_for_google_account (data)
-        elif account_type == "microsoft":
-            payload = _get_account_data_for_microsoft_account (data)
+    if account_type == "generic":
+        payload = _get_account_data_for_generic_account (data)
+    elif account_type == "gmail":
+        payload = _get_account_data_for_google_account (data)
+    elif account_type == "microsoft":
+        payload = _get_account_data_for_microsoft_account (data)
 
     user = _get_user_by_email(json.loads(payload)["email_address"])
 
