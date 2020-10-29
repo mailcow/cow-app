@@ -1,4 +1,5 @@
 # *-* coding: utf-8 *-*
+# Maintainers:
 # Ahmet Küçük <ahmetkucuk4@gmail.com>
 # Zekeriya Akgül <zkry.akgul@gmail.com>
 

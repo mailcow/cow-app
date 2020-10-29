@@ -34,7 +34,11 @@ def login_smtp(username, password):
         return False, -2
 
 def create_user_account (username, password):
-    status, user_data = sync_engine_account_dispatch(username, password)
+    data = {
+        "email": username,
+        "password": password
+    }
+    status, user_data = sync_engine_account_dispatch(owner_mail=username, account_type="generic", data=data, update=False)
 
     if status:
         user = User(username=username)
@@ -49,8 +53,11 @@ def create_user_account (username, password):
     return False
 
 def update_user_account (username, password):
-
-    status, user_data = sync_engine_account_dispatch(username, password, True)
+    data = {
+        "email": username,
+        "password": password
+    }
+    status, user_data = sync_engine_account_dispatch(owner_mail=username, account_type="generic", data=data, update=True)
 
     if status:
         main_account = Account.query.filter_by(email=username).first()
@@ -58,6 +65,39 @@ def update_user_account (username, password):
         db.session.commit()
         return True
 
+    return False
+
+def create_imap_account (owner_username, email, password, data):
+    status, user_data = sync_engine_account_dispatch(owner_mail=owner_username, update=False, data=data, account_type="generic")
+
+    if status:
+        user = User.query.filter(User.username == owner_username).first()
+        main_account = Account(email=email, password=hashlib.sha256(password.encode()).hexdigest(), is_main=False, uuid=user_data['account_id'])
+        user.accounts.append(main_account)
+        db.session.commit()
+        return True
+    return False
+
+def create_gmail_account(owner_username, email, data):
+    status, user_data = sync_engine_account_dispatch(owner_mail=owner_username, update=False, data=data, account_type="gmail")
+
+    if status:
+        user = User.query.filter(User.username == owner_username).first()
+        main_account = Account(email=email, password=hashlib.sha256("dummy".encode()).hexdigest(), is_main=False, uuid=user_data['account_id'])
+        user.accounts.append(main_account)
+        db.session.commit()
+        return True
+    return False
+
+def create_microsoft_account(owner_username, email, data):
+    status, user_data = sync_engine_account_dispatch(owner_mail=owner_username, update=False, data=data, account_type="microsoft")
+
+    if status:
+        user = User.query.filter(User.username == owner_username).first()
+        main_account = Account(email=email, password=hashlib.sha256("dummy".encode()).hexdigest(), is_main=False, uuid=user_data['account_id'])
+        user.accounts.append(main_account)
+        db.session.commit()
+        return True
     return False
 
 @jwt.token_in_blacklist_loader

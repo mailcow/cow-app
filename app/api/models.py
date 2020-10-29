@@ -39,6 +39,12 @@ class User(Base):
     def __repr__(self):
         return '<User %s %s>' % (self.name, self.surname)
 
+    def has_account(self, email):
+        for account in self.accounts:
+            if email == account.email:
+                return True
+        return False
+
     @property
     def get_accounts(self):
         ret = []
