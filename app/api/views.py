@@ -6,7 +6,7 @@
 from app import app
 from flask import Response, Blueprint, request, jsonify, session
 from app.api.models import User
-from app.auth.utils import login_smtp, create_imap_account, create_gmail_account, create_microsoft_account
+from app.auth.utils import login_smtp, create_imap_account, create_gmail_account, create_microsoft_account, delete_account
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 
@@ -72,7 +72,7 @@ class MailApi(Resource):
 
 class AccountApi(Resource):
 
-    # @jwt_required
+    @jwt_required
     def get(self):
         return jsonify({'test': 'success', 'status': True}, mimetype="application/json", status_code=200)
 
@@ -123,7 +123,7 @@ class AccountApi(Resource):
             resp.status_code = 500
             return resp
 
-    # @jwt_required
+    @jwt_required
     def put(self):
         if not request.is_json:
             resp = jsonify({'status': False, "content": "Missing JSON in request"})
@@ -142,5 +142,20 @@ class AccountApi(Resource):
 
         username = body.get('username', '')
         email = body.get('email', '')
+        user = User.query.filter_by(username=username).first()
 
-        return Response({'test': 'success', 'status': True}, mimetype="application/json", status=200)
+        if not user.has_account(email):
+            resp = jsonify({'status': False, 'code': 'AD-100', 'content': 'User does not have this account'})
+            resp.status_code = 400
+            return resp 
+
+        status = delete_account(owner_username=username, email=email)
+
+        if status:
+            resp = jsonify({'status': True, 'code': 'AD-101', 'content': 'Account is successfully deleted'})
+            resp.status_code = 200
+            return resp
+        else:
+            resp = jsonify({'status': False, 'code': 'AD-102', 'content': 'Something went wrong while deleting account'})
+            resp.status_code = 500
+            return resp 

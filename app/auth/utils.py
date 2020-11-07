@@ -6,11 +6,12 @@ from flask_jwt_extended import decode_token
 
 from app import app, db, jwt
 from app.auth.exceptions import TokenNotFound
-from app.auth.services import sync_engine_account_dispatch
+from app.auth.services import sync_engine_account_dispatch, sync_engine_delete_account
 from app.auth.models import Token
 from app.api.models import User, Account
 
 import hashlib
+import traceback
 
 def login_smtp(username, password):
     import smtplib
@@ -97,6 +98,21 @@ def create_microsoft_account(owner_username, email, data):
         db.session.commit()
         return True
     return False
+
+def delete_account(owner_username, email):
+    account_to_be_deleted = Account.query.filter(Account.email == email).first()
+
+    status = sync_engine_delete_account(account_to_be_deleted.uuid)
+    if status:
+        try:
+            db.session.delete(account_to_be_deleted)
+            db.session.commit()
+            return True
+        except Exception as e:
+            traceback.print_exc()
+            return False
+    return False
+        
 
 @jwt.token_in_blacklist_loader
 def check_if_token_revoked(decoded_token):

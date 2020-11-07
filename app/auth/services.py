@@ -1,4 +1,4 @@
-from app import app
+from app import app, db
 from requests.auth import HTTPBasicAuth
 
 import requests
@@ -95,13 +95,19 @@ def _get_account_data_for_microsoft_account(data):
     })
 
 def _get_user_by_email (email):
-    response = requests.get(URL + '/accounts?email_address=' + email)
-    if response.status_code == 200:
-        data = response.json()
-        if len(data) > 0:
-            return response.json()[0]
-
-    return False
+    records = db.session.execute('SELECT sync_state,_sync_status from inbox.account WHERE _raw_address="{}";'.format(email)).fetchall()
+    if not records:
+        return False
+    else:
+        ret = False
+        for record in records:
+            if record[0] == "running":
+                return True
+            else:
+                rec_status = json.loads(record[1])
+                if "sync_disabled_reason" not in rec_status.keys() or rec_status['sync_disabled_reason'] == "account deleted":
+                    ret = False
+    return ret
 
 def sync_engine_update_account (user_id, data):
     response = requests.put(URL + '/accounts/' + user_id, data=data, headers=HEADERS)
@@ -114,7 +120,6 @@ def sync_engine_update_account (user_id, data):
         return False, None
 
 def sync_engine_create_account(data):
-    print("DATA>>> ", data)
     response = requests.post(URL + '/accounts', data=data, headers=HEADERS)
 
     if response.status_code == 200:
@@ -124,6 +129,13 @@ def sync_engine_create_account(data):
     else:
         return False, None
 
+def sync_engine_delete_account(account_id):
+    response = requests.delete(URL + '/accounts/' + account_id, headers=HEADERS)
+    if response.status_code == 200:
+        return True
+    else:
+        return False
+
 def sync_engine_account_dispatch (owner_mail, account_type, data, update = False):
     if account_type == "generic":
         payload = _get_account_data_for_generic_account (data)
@@ -132,18 +144,18 @@ def sync_engine_account_dispatch (owner_mail, account_type, data, update = False
     elif account_type == "microsoft":
         payload = _get_account_data_for_microsoft_account (data)
 
-    user = _get_user_by_email(json.loads(payload)["email_address"])
+    account = _get_user_by_email(json.loads(payload)["email_address"])
 
-    if user:
+    if account:
         if update:
-            # Update user for changed password
-            return sync_engine_update_account(user['account_id'], payload)
+            # Update account for changed password
+            return sync_engine_update_account(account['account_id'], payload)
 
         # Make sure account sync is active?
-        status = activate_user_sync(user['account_id'])
-        return status, user
+        status = activate_user_sync(account['account_id'])
+        return status, account
     else:
-        # Initial creation of user account
+        # Initial creation of account account
         return sync_engine_create_account(payload)
 
 def activate_user_sync (user_id):
