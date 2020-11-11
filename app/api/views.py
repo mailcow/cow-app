@@ -17,6 +17,7 @@ import traceback
 class MailApi(Resource):
 
     API_LIST = [
+        "send",
         "events",
         "calenders",
         "drafts",
@@ -27,9 +28,14 @@ class MailApi(Resource):
         "threads",
         "contacts"
     ]
-    
+
     @jwt_required
     def dispatch_request(self, *args, **kwargs):
+
+        if request.method == 'OPTIONS':
+            resp =  jsonify({'status': True})
+            resp.status_code = 200
+            return resp
 
         api_name = kwargs['api']
 
@@ -38,9 +44,9 @@ class MailApi(Resource):
             resp.status_code = 404
             return resp
 
-        account_id = session.get('account_id', False)
+        account = session.get('account', False)
 
-        if not account_id:
+        if not account:
             resp =  jsonify({'status': False, 'code': 'MA-100', 'content': 'Could not verify authorization credentials'})
             resp.status_code = 500
             return resp
@@ -49,6 +55,10 @@ class MailApi(Resource):
 
         requests_args = {}
         headers = dict(request.headers)
+
+        if 'Content-Type' not in headers:
+            headers['Content-Type'] = 'application/json'
+
         params = request.args.copy()
 
         for key in list(headers.keys()):
@@ -58,7 +68,7 @@ class MailApi(Resource):
         requests_args['data'] = request.data
         requests_args['headers'] = headers
         requests_args['params'] = params
-        requests_args['auth'] = requests.auth.HTTPBasicAuth(account_id, '')
+        requests_args['auth'] = requests.auth.HTTPBasicAuth(account['mail-uuid'], '')
 
         response = requests.request(request.method, URL, **requests_args)
 
@@ -76,13 +86,13 @@ class AccountApi(Resource):
     def get(self):
         return jsonify({'test': 'success', 'status': True}, mimetype="application/json", status_code=200)
 
-    # @jwt_required
+    @jwt_required
     def post(self):
         if not request.is_json:
             resp = jsonify({'status': False, "content": "Missing JSON in request"})
             resp.status_code = 400
             return resp
-        
+
         body = request.get_json()
 
         username = body.get('username', '')
@@ -131,13 +141,13 @@ class AccountApi(Resource):
             return resp
         return Response({'test': 'success', 'status': True}, mimetype="application/json", status=200)
 
-    # @jwt_required
+    @jwt_required
     def delete(self):
         if not request.is_json:
             resp = jsonify({'status': False, "content": "Missing JSON in request"})
             resp.status_code = 400
             return resp
-        
+
         body = request.get_json()
 
         username = body.get('username', '')
@@ -158,4 +168,4 @@ class AccountApi(Resource):
         else:
             resp = jsonify({'status': False, 'code': 'AD-102', 'content': 'Something went wrong while deleting account'})
             resp.status_code = 500
-            return resp 
+            return resp
