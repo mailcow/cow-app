@@ -84,7 +84,11 @@ class AccountApi(Resource):
 
     @jwt_required
     def get(self):
-        return jsonify({'test': 'success', 'status': True}, mimetype="application/json", status_code=200)
+        username = session.get('account')['username']
+        user = User.query.filter_by(username=username).first()
+        resp =  jsonify({'status': True, 'user_accounts': user.get_accounts})
+        resp.status_code = 200
+        return resp
 
     @jwt_required
     def post(self):
@@ -115,7 +119,7 @@ class AccountApi(Resource):
 
                     if smtp_status:
                         create_imap_account(username, email, password, body)
-                        resp = jsonify({'status': True, 'code': 'AA-101', 'content': 'New account was added'})
+                        resp = jsonify({'status': True, 'user_accounts': user.get_accounts, 'code': 'AA-101', 'content': 'New account was added'})
                         resp.status_code = 200
                     else:
                         resp = jsonify({'status': False, 'code': 'AA-100', 'content': 'User credentials are wrong'})
@@ -123,12 +127,12 @@ class AccountApi(Resource):
                     return resp
                 elif account_type == "gmail":
                     create_gmail_account(username, email, body)
-                    resp = jsonify({'status': True, 'code': 'AA-101', 'content': 'New account was added'})
+                    resp = jsonify({'status': True, 'user_accounts': user.get_accounts, 'code': 'AA-101', 'content': 'New account was added'})
                     resp.status_code = 200
                     return resp
                 elif account_type == "microsoft":
                     create_microsoft_account(username, email, body)
-                    resp = jsonify({'status': True, 'code': 'AA-101', 'content': 'New account was added'})
+                    resp = jsonify({'status': True, 'user_accounts': user.get_accounts, 'code': 'AA-101', 'content': 'New account was added'})
                     resp.status_code = 200
                     return resp
             except Exception as e:
