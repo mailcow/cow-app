@@ -95,9 +95,11 @@ class AccountApi(Resource):
 
         body = request.get_json()
 
-        username = body.get('username', '')
+        username =  session.get('account')['username'] # body.get('username', '')
         account_type = body.get('account_type', '') # generic,gmail,microsoft
         email = body.get('email', '')
+        smtp_host = body.get('smtp_server_host')
+        smtp_port = body.get('smtp_server_port')
 
         if not username or not account_type:
             resp = jsonify({'status': False, 'code': 'AA-100', 'content': 'User credentials are missing'})
@@ -109,9 +111,15 @@ class AccountApi(Resource):
             try:
                 if account_type == "generic":
                     password = body.get('password', '')
-                    create_imap_account(username, email, password, body)
-                    resp = jsonify({'status': True, 'code': 'AA-101', 'content': 'New account was added'})
-                    resp.status_code = 200
+                    smtp_status, res_code = login_smtp(email, password, smtp_host, smtp_port)
+
+                    if smtp_status:
+                        create_imap_account(username, email, password, body)
+                        resp = jsonify({'status': True, 'code': 'AA-101', 'content': 'New account was added'})
+                        resp.status_code = 200
+                    else:
+                        resp = jsonify({'status': False, 'code': 'AA-100', 'content': 'User credentials are wrong'})
+                        resp.status_code = 400
                     return resp
                 elif account_type == "gmail":
                     create_gmail_account(username, email, body)

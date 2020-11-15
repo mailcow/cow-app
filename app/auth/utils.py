@@ -13,13 +13,17 @@ from app.api.models import User, Account
 import hashlib
 import traceback
 
-def login_smtp(username, password):
+def login_smtp(username, password, smtp_host=None, smtp_port=None):
     import smtplib
 
+    smtp_host = smtp_host or app.config['SMTP_HOST']
+
     if app.config['SMTP_SEC_CONN']:
-        server = smtplib.SMTP_SSL(app.config['SMTP_HOST'], app.config['SMTPS_PORT'])
+        smtp_port = smtp_port or app.config['SMTPS_PORT']
+        server = smtplib.SMTP_SSL(smtp_host, smtp_port)
     else:
-        server = smtplib.SMTP(app.config['SMTP_HOST'], app.config['SMTP_PORT'])
+        smtp_port = smtp_port or app.config['SMTP_PORT']
+        server = smtplib.SMTP(smtp_host, smtp_port)
 
     try:
         server.login(username, password)

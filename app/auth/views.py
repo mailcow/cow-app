@@ -69,7 +69,7 @@ class LoginApi(Resource):
             access_token = create_access_token(identity=email, expires_delta=expires)
             refresh_token = create_refresh_token(identity=email)
             expires_date = datetime.datetime.now() + expires
-            session['account'] = {'id': user.main_account.id, 'mail-uuid': user.main_account.uuid}
+            session['account'] = {'id': user.main_account.id, 'username': email, 'mail-uuid': user.main_account.uuid}
 
             # Store the tokens in our store with a status of not currently revoked.
             add_token_to_database(access_token)
