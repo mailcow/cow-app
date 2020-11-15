@@ -5,7 +5,7 @@
 
 from app import app
 from flask import Response, Blueprint, request, jsonify, session
-from app.api.models import User
+from app.api.models import User, Account
 from app.auth.utils import login_smtp, create_imap_account, create_gmail_account, create_microsoft_account, delete_account
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
@@ -99,6 +99,22 @@ class AccountApi(Resource):
 
         body = request.get_json()
 
+        account_id = body.get("account_id", False)
+        if account_id:
+            try:
+                username = session.get('account')['username']
+                user = User.query.filter_by(username=username).first()
+                account = Account.query.filter_by(id=account_id).first()
+                session['account'] = {'id': account_id, 'username': username, 'mail-uuid': account.uuid}
+                resp = jsonify({'status': True, 'code': 'AA-100', 'content': 'Active account changed'})
+                resp.status_code = 200
+                return resp
+            except Exception as e:
+                traceback.print_exc()
+                resp = jsonify({'status': False, 'code': 'AA-105', 'content': 'Error occured while changing account.'})
+                resp.status_code = 400
+                return resp
+
         username =  session.get('account')['username'] # body.get('username', '')
         account_type = body.get('account_type', '') # generic,gmail,microsoft
         email = body.get('email', '')
@@ -118,7 +134,8 @@ class AccountApi(Resource):
                     smtp_status, res_code = login_smtp(email, password, smtp_host, smtp_port)
 
                     if smtp_status:
-                        create_imap_account(username, email, password, body)
+                        if not create_imap_account(username, email, password, body):
+                            raise Exception("Cannot create account")
                         resp = jsonify({'status': True, 'user_accounts': user.get_accounts, 'code': 'AA-101', 'content': 'New account was added'})
                         resp.status_code = 200
                     else:
@@ -126,12 +143,14 @@ class AccountApi(Resource):
                         resp.status_code = 400
                     return resp
                 elif account_type == "gmail":
-                    create_gmail_account(username, email, body)
+                    if not create_gmail_account(username, email, body):
+                        raise Exception("Cannot create account")
                     resp = jsonify({'status': True, 'user_accounts': user.get_accounts, 'code': 'AA-101', 'content': 'New account was added'})
                     resp.status_code = 200
                     return resp
                 elif account_type == "microsoft":
-                    create_microsoft_account(username, email, body)
+                    if not create_microsoft_account(username, email, body):
+                        raise Exception("Cannot create account")
                     resp = jsonify({'status': True, 'user_accounts': user.get_accounts, 'code': 'AA-101', 'content': 'New account was added'})
                     resp.status_code = 200
                     return resp
