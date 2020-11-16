@@ -121,14 +121,45 @@ def sync_engine_update_account (user_id, data):
         return False, None
 
 def sync_engine_create_account(data):
-    response = requests.post(URL + '/accounts', data=data, headers=HEADERS)
+    max_tries = 5
 
-    if response.status_code == 200:
+    while max_tries > 0:
+        max_tries -= 1
+        response = requests.post(URL + '/accounts', data=data, headers=HEADERS)
+        if sync_engine_check_account_health() == 0:
+            break
+        else:
+            response = False
+
+    if response and response.status_code == 200:
         user_data = response.json()
         active_status = activate_user_sync(user_data['account_id'])
         return active_status, user_data
     else:
         return False, None
+
+def sync_engine_purge_faulty_accounts():
+    db.session.execute('DELETE from inbox.account WHERE sync_state is NULL;')
+
+def sync_engine_check_account_health(email):
+    records = db.session.execute('SELECT sync_state,_sync_status from inbox.account WHERE _raw_address="{}";'.format(email)).fetchall()
+
+    if not records:
+        # Account does not exist in db
+        return -1 
+    else:
+        ret = False
+        for record in records:
+            if record[0] == "running":
+                # Account healthy and running
+                return 0
+            else:
+                rec_status = json.loads(record[1])
+                if len(rec_status.keys()) == 0:
+                    # Sync engine cant fully create account. _sync_status object is empty
+                    sync_engine_purge_faulty_accounts()
+                    ret = 1
+    return ret
 
 def sync_engine_delete_account(account_id):
     response = requests.delete(URL + '/accounts/' + account_id, headers=HEADERS)
