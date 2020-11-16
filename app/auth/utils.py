@@ -75,8 +75,10 @@ def create_imap_account (owner_username, email, password, data):
 
     if status:
         user = User.query.filter(User.username == owner_username).first()
-        main_account = Account(email=email, password=hashlib.sha256(password.encode()).hexdigest(), is_main=False, uuid=user_data['account_id'])
-        user.accounts.append(main_account)
+        new_account = Account.query.filter(Account.email == email).first()
+        if not new_account:
+            new_account = Account(email=email, password=hashlib.sha256(password.encode()).hexdigest(), is_main=False, uuid=user_data['account_id'])
+        user.accounts.append(new_account)
         db.session.commit()
         return True
     return False
@@ -86,8 +88,10 @@ def create_gmail_account(owner_username, email, data):
 
     if status:
         user = User.query.filter(User.username == owner_username).first()
-        main_account = Account(email=email, password=hashlib.sha256("dummy".encode()).hexdigest(), is_main=False, uuid=user_data['account_id'])
-        user.accounts.append(main_account)
+        new_account = Account.query.filter(Account.email == email).first()
+        if not new_account:
+            new_account = Account(email=email, password=hashlib.sha256("dummy".encode()).hexdigest(), is_main=False, uuid=user_data['account_id'])
+        user.accounts.append(new_account)
         db.session.commit()
         return True
     return False
@@ -97,8 +101,10 @@ def create_microsoft_account(owner_username, email, data):
 
     if status:
         user = User.query.filter(User.username == owner_username).first()
-        main_account = Account(email=email, password=hashlib.sha256("dummy".encode()).hexdigest(), is_main=False, uuid=user_data['account_id'])
-        user.accounts.append(main_account)
+        new_account = Account.query.filter(Account.email == email).first()
+        if not new_account:
+            new_account = Account(email=email, password=hashlib.sha256("dummy".encode()).hexdigest(), is_main=False, uuid=user_data['account_id'])
+        user.accounts.append(new_account)
         db.session.commit()
         return True
     return False
