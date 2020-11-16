@@ -35,6 +35,7 @@ class LoginApi(Resource):
 
             user = User.query.filter_by(username=email).first()
             smtp_status, res_code = login_smtp(email, password)
+            is_first_login = False
 
             if smtp_status:
 
@@ -51,6 +52,7 @@ class LoginApi(Resource):
                             return resp
 
                 else:
+                    is_first_login = True
                     # Create sync-engine account
                     created = create_user_account(email, password)
 
@@ -73,10 +75,9 @@ class LoginApi(Resource):
 
             # Store the tokens in our store with a status of not currently revoked.
             add_token_to_database(access_token)
-            add_token_to_database(refresh_token)
-
+            add_token_to_database(refresh_token):
             resp =  jsonify({'status': True, 'access_token': access_token, 'refresh_token': refresh_token, 'expires': str(expires_date),
-                             'user_accounts': user.get_accounts})
+                             'user_accounts': user.get_accounts, 'first_login': is_first_login})
 
             set_access_cookies(resp, access_token)
             set_refresh_cookies(resp, refresh_token)
