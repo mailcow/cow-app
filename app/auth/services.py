@@ -1,5 +1,6 @@
 from app import app, db
 from requests.auth import HTTPBasicAuth
+from app.api.models import Account
 
 import requests
 import json
@@ -144,16 +145,19 @@ def sync_engine_account_dispatch (owner_mail, account_type, data, update = False
     elif account_type == "microsoft":
         payload = _get_account_data_for_microsoft_account (data)
 
-    account = _get_user_by_email(json.loads(payload)["email_address"])
+    email = json.loads(payload)["email_address"]
+    account = _get_user_by_email(email)
 
     if account:
+        account_uuid = Account.query.filter(Account.email == email).first().uuid
         if update:
             # Update account for changed password
-            return sync_engine_update_account(account['account_id'], payload)
+            return sync_engine_update_account(account_uuid, payload)
 
         # Make sure account sync is active?
-        status = activate_user_sync(account['account_id'])
-        return status, account
+        status = activate_user_sync(account_uuid)
+        user_data = {'account_id': account_uuid}
+        return status, user_data
     else:
         # Initial creation of account account
         return sync_engine_create_account(payload)
