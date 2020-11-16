@@ -17,7 +17,7 @@ class Account(Base):
     __tablename__ = 'account'
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    email = db.Column(db.String(128), nullable=False, unique=True)
+    email = db.Column(db.String(128), nullable=False)
     password = db.Column(db.String(192),  nullable=False)
     is_main = db.Column(db.Boolean,  default=False)
     uuid = db.Column(db.String(128), nullable=False)
