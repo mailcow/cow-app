@@ -2,8 +2,11 @@ from app import app, db
 from requests.auth import HTTPBasicAuth
 from app.api.models import Account
 
+import time
 import requests
 import json
+import logging 
+
 
 URL = app.config['SYNC_ENGINE_API_URL']
 
@@ -75,7 +78,6 @@ def _get_account_data_for_google_account(data):
         "sync_contacts": sync_contacts,
     })
 
-
 def _get_account_data_for_microsoft_account(data):
     email_address = data.get("email")
     scopes = data.get("scopes")
@@ -95,8 +97,14 @@ def _get_account_data_for_microsoft_account(data):
         "sync_email": sync_email
     })
 
-def _get_user_by_email (email):
+def get_sync_status(email):
+    db.session.commit()
     records = db.session.execute('SELECT sync_state,_sync_status from inbox.account WHERE _raw_address="{}";'.format(email)).fetchall()
+    return records
+
+def _get_user_by_email (email):
+    # records = db.session.execute('SELECT sync_state,_sync_status from inbox.account WHERE _raw_address="{}";'.format(email)).fetchall()
+    records = get_sync_status(email)
     if not records:
         return False
     else:
@@ -122,28 +130,35 @@ def sync_engine_update_account (user_id, data):
 
 def sync_engine_create_account(data):
     max_tries = 5
+    active_status = False
+    user_data = None
+    email = json.loads(data)['email_address']
 
     while max_tries > 0:
         max_tries -= 1
         response = requests.post(URL + '/accounts', data=data, headers=HEADERS)
-        if sync_engine_check_account_health() == 0:
+        if response and response.status_code == 200:
+            user_data = response.json()
+            break
+
+    db.session.flush()
+    max_tries = 5
+    while max_tries > 0:
+        max_tries -= 1
+        active_status = activate_user_sync(user_data['account_id'])
+        if sync_engine_check_account_health(email) == 0:
             break
         else:
-            response = False
+            active_status = False
+    sync_engine_purge_faulty_account(email)
+    return active_status, user_data
 
-    if response and response.status_code == 200:
-        user_data = response.json()
-        active_status = activate_user_sync(user_data['account_id'])
-        return active_status, user_data
-    else:
-        return False, None
-
-def sync_engine_purge_faulty_accounts():
-    db.session.execute('DELETE from inbox.account WHERE sync_state is NULL;')
+def sync_engine_purge_faulty_account(email):
+    db.session.execute('DELETE from inbox.account WHERE _raw_address="{}" and sync_state is NULL;'.format(email))
 
 def sync_engine_check_account_health(email):
-    records = db.session.execute('SELECT sync_state,_sync_status from inbox.account WHERE _raw_address="{}";'.format(email)).fetchall()
-
+    records = get_sync_status(email)
+    print_to_stdout(str(records))
     if not records:
         # Account does not exist in db
         return -1 
@@ -157,8 +172,8 @@ def sync_engine_check_account_health(email):
                 rec_status = json.loads(record[1])
                 if len(rec_status.keys()) == 0:
                     # Sync engine cant fully create account. _sync_status object is empty
-                    sync_engine_purge_faulty_accounts()
                     ret = 1
+    print_to_stdout("HEALTH RET:::: " + str(ret))
     return ret
 
 def sync_engine_delete_account(account_id):
@@ -197,3 +212,8 @@ def activate_user_sync (user_id):
     status_payload = json.dumps({'sync_should_run': True})
     active_sync_status = requests.put(URL + '/status', data=status_payload, headers=HEADERS, auth=HTTPBasicAuth(user_id, ''))
     return active_sync_status.status_code == 200
+
+def print_to_stdout(a): 
+  
+    logger = logging.getLogger('werkzeug')
+    logger.info(a)
