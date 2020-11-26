@@ -1,4 +1,4 @@
-# Cow App
+# Mailcow App
 
 The backend app of Mailcow's CowUI web interface
 
