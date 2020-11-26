@@ -1,2 +1,4 @@
 from app import app
-app.run(host='0.0.0.0', port=8090, debug=True)
+from config import HOST, HOST_PORT
+
+app.run(host=HOST, port=HOST_PORT, debug=True)
