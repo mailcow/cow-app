@@ -17,6 +17,16 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SECRET_KEY = 'fgh7Ax809A8w16cv89as1ygASf7y8ASfg78g234'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+# should be the hostname of your project
+HOST = os.environ.get('HOST', '0.0.0.0') 
+# useful for development/testing mode
+# necessary if non-standard port is being used
+HOST_PORT = os.environ.get('HOST_PORT', '8090')
+# we need to append the host port to the server_name if it is non-standard
+SERVER_NAME_EXTRA = len(HOST_PORT) and '' or (":" + HOST_PORT)
+# SERVER_NAME contains the hostname and port (if non-default)
+SERVER_NAME = HOST + SERVER_NAME_EXTRA
+
 # Database
 DB = os.environ.get('DATABASE_TYPE','mysql')
 DB_HOST = os.environ.get('DATABASE_HOST','127.0.0.1')
