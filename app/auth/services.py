@@ -134,12 +134,17 @@ def sync_engine_create_account(data):
     user_data = None
     email = json.loads(data)['email_address']
 
+    user_created = False
     while max_tries > 0:
         max_tries -= 1
         response = requests.post(URL + '/accounts', data=data, headers=HEADERS)
         if response and response.status_code == 200:
+            user_created = True
             user_data = response.json()
             break
+    
+    if not user_created:
+        return False, False
 
     db.session.flush()
     max_tries = 5
