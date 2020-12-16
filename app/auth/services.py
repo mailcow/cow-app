@@ -163,7 +163,6 @@ def sync_engine_purge_faulty_account(email):
 
 def sync_engine_check_account_health(email):
     records = get_sync_status(email)
-    print_to_stdout(str(records))
     if not records:
         # Account does not exist in db
         return -1 
@@ -178,7 +177,6 @@ def sync_engine_check_account_health(email):
                 if len(rec_status.keys()) == 0:
                     # Sync engine cant fully create account. _sync_status object is empty
                     ret = 1
-    print_to_stdout("HEALTH RET:::: " + str(ret))
     return ret
 
 def sync_engine_delete_account(account_id):
@@ -219,6 +217,5 @@ def activate_user_sync (user_id):
     return active_sync_status.status_code == 200
 
 def print_to_stdout(a): 
-  
     logger = logging.getLogger('werkzeug')
     logger.info(a)
