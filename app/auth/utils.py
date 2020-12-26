@@ -1,5 +1,6 @@
 
 from datetime import datetime
+from time import sleep
 
 from sqlalchemy.orm.exc import NoResultFound
 from flask_jwt_extended import decode_token
@@ -185,3 +186,20 @@ def prune_database():
     for token in expired:
         db.session.delete(token)
     db.session.commit()
+
+def check_database_status(max_tries=5):
+    is_database_working = True
+    try_count = 0
+
+    while try_count < max_tries:
+        try:
+            # to check database we will execute raw query
+            session = db.session
+            session.execute('SELECT 1')
+            is_database_working = True
+            break
+        except Exception as e:
+            traceback.print_exc()
+            is_database_working = False
+        sleep(0.05)
+    return is_database_working

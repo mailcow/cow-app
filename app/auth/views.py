@@ -8,7 +8,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 
 from app import db
 from app.api.models import User
-from app.auth.utils import login_smtp, create_user_account, update_user_account, add_token_to_database, revoke_token_status
+from app.auth.utils import login_smtp, create_user_account, update_user_account, add_token_to_database, revoke_token_status, check_database_status
 from flask_jwt_extended import jwt_required, jwt_refresh_token_required, get_jwt_identity, unset_jwt_cookies, set_access_cookies, set_refresh_cookies, get_raw_jwt
 from flask_restful import Resource
 import datetime
@@ -30,6 +30,12 @@ class LoginApi(Resource):
 
             if not email or not password:
                 resp = jsonify({'status': False, 'code': 'MC-100', 'content': 'User credentials wrong'})
+                resp.status_code = 400
+                return resp
+
+            db_status = check_database_status()
+            if not db_status:
+                resp = jsonify({'status': False, 'code': 'DB-100', 'content': 'DB does not ready yet!'})
                 resp.status_code = 400
                 return resp
 
