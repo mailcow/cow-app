@@ -153,6 +153,7 @@ def sync_engine_create_account(data):
         max_tries -= 1
         active_status = activate_user_sync(user_data['account_id'])
         if sync_engine_check_account_health(email) == 0:
+            active_status = True
             break
         else:
             active_status = False
