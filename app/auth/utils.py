@@ -192,6 +192,7 @@ def check_database_status(max_tries=5):
     try_count = 0
 
     while try_count < max_tries:
+        try_count += 1
         try:
             # to check database we will execute raw query
             session = db.session
