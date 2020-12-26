@@ -146,6 +146,7 @@ def sync_engine_create_account(data):
     if not user_created:
         return False, False
 
+    time.sleep(0.05)
     db.session.flush()
     max_tries = 5
     while max_tries > 0:
@@ -155,11 +156,15 @@ def sync_engine_create_account(data):
             break
         else:
             active_status = False
+        time.sleep(0.05)
     sync_engine_purge_faulty_account(email)
     return active_status, user_data
 
 def sync_engine_purge_faulty_account(email):
-    db.session.execute('DELETE from inbox.account WHERE _raw_address="{}" and sync_state is NULL;'.format(email))
+    try:
+        db.session.execute('DELETE from inbox.account WHERE _raw_address="{}" and sync_state is NULL;'.format(email))
+    except Exception as e:
+        traceback.print_exc()
 
 def sync_engine_check_account_health(email):
     records = get_sync_status(email)
