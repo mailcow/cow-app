@@ -200,7 +200,8 @@ def check_database_status(max_tries=5):
             is_database_working = True
             break
         except Exception as e:
+            db.session.rollback()
             traceback.print_exc()
             is_database_working = False
-        sleep(0.05)
+        sleep(1)
     return is_database_working
