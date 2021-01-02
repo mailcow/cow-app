@@ -158,7 +158,7 @@ class AccountApi(Resource):
                 traceback.print_exc()
                 resp = jsonify({'status': False, 'code': 'AA-102', 'content': 'Something went wrong while adding new account'})
                 resp.status_code = 500
-                return resp 
+                return resp
         else:
             resp =  jsonify({'status': False, 'code': 'AA-103', 'content': 'User already have this account'})
             resp.status_code = 500
@@ -188,7 +188,7 @@ class AccountApi(Resource):
         if not user.has_account(email):
             resp = jsonify({'status': False, 'code': 'AD-100', 'content': 'User does not have this account'})
             resp.status_code = 400
-            return resp 
+            return resp
 
         status = delete_account(owner_username=username, email=email)
 
@@ -200,3 +200,22 @@ class AccountApi(Resource):
             resp = jsonify({'status': False, 'code': 'AD-102', 'content': 'Something went wrong while deleting account'})
             resp.status_code = 500
             return resp
+
+class SettingApi(Resource):
+
+    @jwt_required
+    def get(self):
+        pass
+
+    @jwt_required
+    def post(self):
+        pass
+
+    @jwt_required
+    def put(self):
+        pass
+
+    @jwt_required
+    def delete(self):
+        pass
+        

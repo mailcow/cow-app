@@ -3,6 +3,8 @@
 # Zekeriya Akgül <zkry.akgul@gmail.com>
 
 from app import db
+from sqlalchemy.dialects.mysql import base as mysql
+
 import hashlib
 
 class Base(db.Model):
@@ -35,6 +37,7 @@ class User(Base):
     surname = db.Column(db.String(128), nullable=True)
     username = db.Column(db.String(128), nullable=False, unique=True)
     accounts = db.relationship('Account', backref="user", lazy=True)
+    settings = db.relationship('Settings', backref="user", lazy=True)
 
     def __repr__(self):
         return '<User %s %s>' % (self.name, self.surname)
@@ -51,7 +54,25 @@ class User(Base):
         for account in self.accounts:
             ret.append({"email": account.email, "id": account.id, "is_main": account.is_main})
         return ret
-    
+
     @property
     def main_account(self):
         return Account.query.filter_by(user_id = self.id).filter_by(is_main=True).one()
+
+
+AccountSettings = db.Table('account_settings',
+    db.Column('setting_id', db.Integer, db.ForeignKey('settings.id'), primary_key=True),
+    db.Column('account_id', db.Integer, db.ForeignKey('account.id'), primary_key=True)
+)
+
+class Settings(Base):
+    __tablename__ = 'settings'
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    accounts = db.relationship("Account", secondary=AccountSettings, lazy='subquery', backref="account_settings")
+    section = db.Column(db.Text, nullable=False) # mail|calender|contact|profile
+    setting_type = db.Column(db.Text, nullable=False) # vocation|filter|signiture etc.
+    value = db.Column(mysql.JSON, nullable=False)
+
+    def __repr__(self):
+        return '<UserSettings %s %s>' % (self.section, self.settings_type)
