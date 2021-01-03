@@ -7,6 +7,7 @@ from app import app
 from flask import Response, Blueprint, request, jsonify, session
 from app.api.models import User, Account
 from app.auth.utils import login_smtp, create_imap_account, create_gmail_account, create_microsoft_account, delete_account
+from app.api.utils import create_sieve_script
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 
@@ -14,20 +15,22 @@ import os
 import requests
 import traceback
 
-class MailApi(Resource):
+REFRESH_REQUIRED_TYPES = ["filter", "vacation", "forward"]
 
-    API_LIST = [
-        "send",
-        "events",
-        "calenders",
-        "drafts",
-        "sends",
-        "folders",
-        "labels",
-        "messages",
-        "threads",
-        "contacts"
-    ]
+API_LIST = [
+    "send",
+    "events",
+    "calenders",
+    "drafts",
+    "sends",
+    "folders",
+    "labels",
+    "messages",
+    "threads",
+    "contacts"
+]
+
+class MailApi(Resource):
 
     @jwt_required
     def dispatch_request(self, *args, **kwargs):
@@ -202,14 +205,51 @@ class AccountApi(Resource):
             return resp
 
 class SettingApi(Resource):
-
     @jwt_required
     def get(self):
         pass
 
     @jwt_required
     def post(self):
-        pass
+        if not request.is_json:
+            resp = jsonify({'status': False, "content": "Missing JSON in request"})
+            resp.status_code = 400
+            return resp
+
+        body = request.get_json()
+
+        username =  session.get('account')['username']
+        user = User.query.filter(User.username == username).first()
+        accounts = body.get('accounts') # ["user1@deneme.com", "user@gmail.com"]
+        section = body.get('section') # mail|calender|contact|general
+        setting_type = body.get('setting_type') # vacation|forward|filter|signature|language etc.
+        content = body.get('content') # settings json
+
+        setting_accounts = []
+        for account in accounts:
+            record = Account.query.filter(Account.email == account).filter(User.id == user.id).first()
+            if record:
+                setting_accounts.append(record)
+
+        try:
+            new_setting = Settings(section=section, setting_type=setting_type, value=content)
+            user.settings.append(new_setting)
+            for setting_account in setting_accounts:
+                new_setting.accounts.append(setting_account)
+            db.session.commit()
+
+            if setting_type in REFRESH_REQUIRED_TYPES:
+                create_sieve_script()
+
+            resp = jsonify({'status': True, 'code': 'ST-100', 'content': 'Successfully saved'})
+            resp.status_code = 200
+            return resp
+        except Exception as e:
+            db.session.rollback()
+            traceback.print_exc(file=sys.stderr)
+            resp = jsonify({'status': False, 'code': 'ST-101', 'content': 'Something went wrong while deleting account'})
+            resp.status_code = 500
+            return resp
 
     @jwt_required
     def put(self):
@@ -218,4 +258,3 @@ class SettingApi(Resource):
     @jwt_required
     def delete(self):
         pass
-        

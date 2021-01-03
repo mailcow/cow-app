@@ -6,3 +6,4 @@ flask-jwt-extended==3.25.0
 Flask-Cors==3.0.9
 requests==2.6.0
 python-dotenv==0.14.0
+sievelib==1.2.1
