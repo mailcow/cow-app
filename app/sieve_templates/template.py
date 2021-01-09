@@ -7,5 +7,4 @@ class Template(object):
         self.params = params
 
     def render():
-        raw_template = get_attr()
-        return render_template(raw_template, vars=params)
+        return render_template(self.name, vars=self.params)
