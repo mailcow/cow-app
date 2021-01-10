@@ -1,13 +1,12 @@
+require [{{ vars.requirements }}];
+
 {%- set filters_applied = namespace(val=False) -%}
 {%- if vars.vacation_settings and not vars.vacation_settings["alwaysSend"] and vars.filter_settings -%}
-{%- for filter in vars.filter_settings -%}
-{{ filter }}
-{%- endfor -%}
+{{ vars.filter_settings }}
 {%- set filters_applied.val = True -%}
 {%- endif -%}
 
 {%- if vars.vacation_settings -%}
-require ["vacation","date","relational"];
 {% if vars.vacation_settings["conditions_enabled"] %}
 if allof ( {{ vars.vacation_settings["conditions"] }} ) {
 {%- endif -%}
@@ -30,9 +29,7 @@ discard;
 {%- endif -%}
 
 {%- if vars.filter_settings and not filters_applied.val %}
-if allof (header :contains "subject" "yartu") {
-    discard;
-}
+{{ vars.filter_settings }}
 {%- endif -%}
 
 {%- if vars.forward_settings -%}
