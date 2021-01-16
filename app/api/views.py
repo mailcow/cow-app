@@ -42,7 +42,7 @@ class MailApi(Resource):
 
         api_name = kwargs['api']
 
-        if not api_name.split('/')[0] in self.API_LIST:
+        if not api_name.split('/')[0] in API_LIST:
             resp =  jsonify({'status': False})
             resp.status_code = 404
             return resp
