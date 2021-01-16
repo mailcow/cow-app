@@ -146,7 +146,19 @@ def get_filter_vars(data):
     return [raw_sieve, requirements]
 
 def get_forward_vars(data):
-    pass
+    """
+    data = {
+        "target_emails": ["abc@example.com", "def@example.com"], # List
+        "keep_copy": True # Boolean 
+    }
+    """
+    requirements = ""
+
+    payload = {}
+    payload["target_mails"] = data.get("target_emails", )
+    payload["keep_copy"] = data.get("keep_copy", False)
+
+    return payload, requirements
 
 def create_sieve_script(username, password):
     user = User.query.filter(User.username == username).first()
