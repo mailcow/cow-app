@@ -194,9 +194,8 @@ def check_database_status(max_tries=5):
     while try_count < max_tries:
         try_count += 1
         try:
-            # to check database we will execute raw query
-            session = db.session
-            session.execute('SELECT 1')
+            # to check database we will execute a sample query
+            User.query.all()
             is_database_working = True
             break
         except Exception as e:
