@@ -4,6 +4,7 @@ from time import sleep
 
 from sqlalchemy.orm.exc import NoResultFound
 from flask_jwt_extended import decode_token
+from pymemcache.client.base import Client
 
 from app import app, db, jwt
 from app.auth.exceptions import TokenNotFound
@@ -123,7 +124,54 @@ def delete_account(owner_username, email):
             traceback.print_exc()
             return False
     return False
-        
+
+def change_mailcow_passwd(username, new_passwd, passwd_scheme):
+    # TODO
+    # generate user new passwd hash for the given algorithm
+    hashed_passwd = ""
+    if passwd_scheme == "SSHA":
+        pass
+    elif passwd_scheme == "SSHA256":
+        pass
+    elif passwd_scheme == "SSHA512":
+        pass
+    elif passwd_scheme == "BLF-CRYPT":
+        pass
+    
+    try:
+        db.session.execute("UPDATE mailbox SET password='{}' where username='{}'".format(hashed_passwd, username))
+        if not app.config['SKIP_SOGO']:
+            return update_sogo_static_view()
+        return True
+    except Exception as e:
+        traceback.print_exc()
+        return False
+    
+
+def update_sogo_static_view():
+    sogo_query1 =  "SELECT 'OK' FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'sogo_view';"
+    sogo_query2 = """REPLACE INTO _sogo_static_view (`c_uid`, `domain`, `c_name`, `c_password`, `c_cn`, `mail`, `aliases`, `ad_aliases`, `ext_acl`, `kind`, `multiple_bookings`) 
+    SELECT `c_uid`, `domain`, `c_name`, `c_password`, `c_cn`, `mail`, `aliases`, `ad_aliases`, `ext_acl`, `kind`, `multiple_bookings` 
+    from sogo_view"""
+    sogo_query3 = "DELETE FROM _sogo_static_view WHERE `c_uid` NOT IN (SELECT `username` FROM `mailbox` WHERE `active` = '1');"
+    
+    try:
+        print("Sogo static view update1")
+        result_count = db.session.execute(sogo_query1).fetchall()
+        if result_count != 0:
+            print("Sogo static view update2")
+            db.session.execute(sogo_query2)
+            db.session.execute(sogo_query3)
+        flush_memcached()
+        return True
+    except Exception as e:
+        traceback.print_exc()
+        return False
+
+def flush_memcached():
+    print("Flushing memcached records!")
+    c = Client(("memcached", "11211"))
+    c.flush_all()
 
 @jwt.token_in_blacklist_loader
 def check_if_token_revoked(decoded_token):
