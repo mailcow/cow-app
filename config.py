@@ -63,6 +63,9 @@ SYNC_ENGINE_HOST = os.environ.get('SYNC_ENGINE_HOST', 'syncengine')
 SYNC_ENGINE_PORT = os.environ.get('SYNC_ENGINE_PORT', '5555')
 SYNC_ENGINE_API_URL = "{}://{}:{}".format(SYNC_ENGINE_WEB_PROTO, SYNC_ENGINE_HOST, SYNC_ENGINE_PORT)
 
+# Sogo 
+SKIP_SOGO = (os.environ.get('SKIP_SOGO', 'n') == 'y')
+
 if DB == 'sqlite':
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, DB_NAME + '.db')
 else:
