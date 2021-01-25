@@ -5,7 +5,7 @@
 
 from app import app
 from flask import Response, Blueprint, request, jsonify, session
-from app.api.models import User, Account
+from app.api.models import User, Account, Settings
 from app.auth.utils import login_smtp, create_imap_account, create_gmail_account, create_microsoft_account, delete_account
 from app.api.utils import create_sieve_script
 from app.api.validation.validate import CowValidate
@@ -16,7 +16,7 @@ import os
 import requests
 import traceback
 
-REFRESH_REQUIRED_TYPES = ["filter", "vacation", "forward"]
+REFRESH_REQUIRED_TYPES = ["email-filter", "email-vacation", "email-forward"]
 
 API_LIST = [
     "send",
@@ -215,9 +215,24 @@ class SettingApi(Resource, CowValidate):
 
     @jwt_required
     def get(self):
-
         username = get_jwt_identity()
-        Settings.query.filter_by(user_id = self.id).one()
+        user_settings = Settings.query.join(User).filter(User.username == username).group_by(Settings.section).all()
+        response = {}
+        for setting in user_settings:
+
+            if not setting.section in response:
+                response[setting.section] = {}
+
+            if not setting.setting_type in response[setting.section]:
+                response[setting.section][setting.setting_type] = {}
+
+            response[setting.section][setting.setting_type]["accounts"] = setting.accounts
+            response[setting.section][setting.setting_type]["enabled"] = setting.enabled
+            response[setting.section][setting.setting_type] = {**response[setting.section][setting.setting_type], **setting.value}
+
+        resp = jsonify({'status': True, 'data': response})
+        resp.status_code = 200
+        return resp
 
     @jwt_required
     def post(self):
@@ -227,13 +242,14 @@ class SettingApi(Resource, CowValidate):
             resp.status_code = 400
             return resp
 
-        body = request.get_json()
-        username = session.get('account')['username']
+        username = get_jwt_identity()
         user = User.query.filter(User.username == username).first()
+
+        body = request.get_json()
         accounts = body.get('accounts') # ["user1@deneme.com", "user@gmail.com"]
         content = body.get('content') # settings json
-        # section = body.get('section') # mail|calender|contact|general
-        # setting_type = body.get('setting_type') # vacation|forward|filter|signature|language etc.
+        section = body.get('section') # mail|calender|contact|general
+        need_refresh = False
 
         if not self.is_valid(content):
             resp = jsonify({'status': False, "content": "Json object is dirty"})
@@ -247,13 +263,19 @@ class SettingApi(Resource, CowValidate):
                 setting_accounts.append(record)
 
         try:
-            new_setting = Settings(section=section, setting_type=setting_type, value=content)
-            user.settings.append(new_setting)
-            for setting_account in setting_accounts:
-                new_setting.accounts.append(setting_account)
-            db.session.commit()
+            for setting_type, setting_value in content.items():
+                new_setting = Settings(section=section, setting_type=setting_type, value=setting_value)
+                user.settings.append(new_setting)
 
-            if setting_type in REFRESH_REQUIRED_TYPES:
+                for setting_account in setting_accounts:
+                    new_setting.accounts.append(setting_account)
+
+                db.session.commit()
+
+                if setting_type in REFRESH_REQUIRED_TYPES:
+                    need_refresh = True
+
+            if need_refresh:
                 create_sieve_script()
 
             resp = jsonify({'status': True, 'code': 'ST-100', 'content': 'Successfully saved'})
