@@ -76,4 +76,4 @@ class Settings(Base):
     value = db.Column(mysql.JSON, nullable=False)
 
     def __repr__(self):
-        return '<UserSettings %s %s>' % (self.section, self.settings_type)
+        return '<UserSettings %s %s>' % (self.section, self.setting_type)
