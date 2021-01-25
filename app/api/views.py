@@ -5,6 +5,7 @@
 
 from app import app
 from flask import Response, Blueprint, request, jsonify, session
+from app import httputils
 from app.api.models import User, Account, Settings
 from app.auth.utils import login_smtp, create_imap_account, create_gmail_account, create_microsoft_account, delete_account
 from app.api.utils import create_sieve_script
@@ -230,9 +231,7 @@ class SettingApi(Resource, CowValidate):
             response[setting.section][setting.setting_type]["enabled"] = setting.enabled
             response[setting.section][setting.setting_type] = {**response[setting.section][setting.setting_type], **setting.value}
 
-        resp = jsonify({'status': True, 'data': response})
-        resp.status_code = 200
-        return resp
+        return httputils.response(response, 200)
 
     @jwt_required
     def post(self):
