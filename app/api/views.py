@@ -8,7 +8,8 @@ from flask import Response, Blueprint, request, jsonify, session
 from app.api.models import User, Account
 from app.auth.utils import login_smtp, create_imap_account, create_gmail_account, create_microsoft_account, delete_account
 from app.api.utils import create_sieve_script
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.api.validation.validate import CowValidate
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_current_user
 from flask_restful import Resource
 
 import os
@@ -31,6 +32,8 @@ API_LIST = [
 ]
 
 class MailApi(Resource):
+
+    name = "mail"
 
     @jwt_required
     def dispatch_request(self, *args, **kwargs):
@@ -84,6 +87,8 @@ class MailApi(Resource):
         return proxy_response
 
 class AccountApi(Resource):
+
+    name = "account"
 
     @jwt_required
     def get(self):
@@ -204,26 +209,36 @@ class AccountApi(Resource):
             resp.status_code = 500
             return resp
 
-class SettingApi(Resource):
+class SettingApi(Resource, CowValidate):
+
+    name = "settings"
+
     @jwt_required
     def get(self):
-        pass
+
+        username = get_jwt_identity()
+        Settings.query.filter_by(user_id = self.id).one()
 
     @jwt_required
     def post(self):
+
         if not request.is_json:
             resp = jsonify({'status': False, "content": "Missing JSON in request"})
             resp.status_code = 400
             return resp
 
         body = request.get_json()
-
-        username =  session.get('account')['username']
+        username = session.get('account')['username']
         user = User.query.filter(User.username == username).first()
         accounts = body.get('accounts') # ["user1@deneme.com", "user@gmail.com"]
-        section = body.get('section') # mail|calender|contact|general
-        setting_type = body.get('setting_type') # vacation|forward|filter|signature|language etc.
         content = body.get('content') # settings json
+        # section = body.get('section') # mail|calender|contact|general
+        # setting_type = body.get('setting_type') # vacation|forward|filter|signature|language etc.
+
+        if not self.is_valid(content):
+            resp = jsonify({'status': False, "content": "Json object is dirty"})
+            resp.status_code = 400
+            return resp
 
         setting_accounts = []
         for account in accounts:
