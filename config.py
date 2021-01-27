@@ -65,6 +65,7 @@ SYNC_ENGINE_API_URL = "{}://{}:{}".format(SYNC_ENGINE_WEB_PROTO, SYNC_ENGINE_HOS
 
 # Sogo 
 SKIP_SOGO = (os.environ.get('SKIP_SOGO', 'n') == 'y')
+MAILCOW_PASS_SCHEME = os.environ.get('MAILCOW_PASS_SCHEME', 'BLF-CRYPT')
 
 if DB == 'sqlite':
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, DB_NAME + '.db')
