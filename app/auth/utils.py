@@ -13,6 +13,9 @@ from app.auth.models import Token
 from app.api.models import User, Account
 
 import hashlib
+import base64
+import bcrypt
+import uuid
 import traceback
 
 def login_smtp(username, password, smtp_host=None, smtp_port=None):
@@ -125,18 +128,23 @@ def delete_account(owner_username, email):
             return False
     return False
 
-def change_mailcow_passwd(username, new_passwd, passwd_scheme):
-    # TODO
-    # generate user new passwd hash for the given algorithm
+def change_mailcow_passwd(username, new_passwd):
+    passwd_scheme = app.config['MAILCOW_PASS_SCHEME']
     hashed_passwd = ""
     if passwd_scheme == "SSHA":
-        pass
+        salt = (uuid.uuid4().hex[:8]).encode()
+        shaHH = hashlib.sha1((new_passwd.encode() + salt)).digest() + salt
+        hashed_passwd = "{SSHA}" + base64.b64encode(shaHH).decode()
     elif passwd_scheme == "SSHA256":
-        pass
+        salt = (uuid.uuid4().hex[:8]).encode()
+        shaHH = hashlib.sha256((new_passwd.encode() + salt)).digest() + salt
+        hashed_passwd = "{SSHA256}" + base64.b64encode(shaHH).decode()
     elif passwd_scheme == "SSHA512":
-        pass
+        salt = (uuid.uuid4().hex[:8]).encode()
+        shaHH = hashlib.sha512((new_passwd.encode() + salt)).digest() + salt
+        hashed_passwd = "{SSHA512}" + base64.b64encode(shaHH).decode()
     elif passwd_scheme == "BLF-CRYPT":
-        pass
+        hashed_passwd = "{BLF-CRYPT}" + bcrypt.hashpw(new_passwd.encode(), bcrypt.gensalt()).decode()
     
     try:
         db.session.execute("UPDATE mailbox SET password='{}' where username='{}'".format(hashed_passwd, username))
@@ -156,12 +164,11 @@ def update_sogo_static_view():
     sogo_query3 = "DELETE FROM _sogo_static_view WHERE `c_uid` NOT IN (SELECT `username` FROM `mailbox` WHERE `active` = '1');"
     
     try:
-        print("Sogo static view update1")
         result_count = db.session.execute(sogo_query1).fetchall()
         if result_count != 0:
-            print("Sogo static view update2")
             db.session.execute(sogo_query2)
             db.session.execute(sogo_query3)
+            db.session.commit()
         flush_memcached()
         return True
     except Exception as e:
@@ -169,7 +176,6 @@ def update_sogo_static_view():
         return False
 
 def flush_memcached():
-    print("Flushing memcached records!")
     c = Client(("memcached", "11211"))
     c.flush_all()
 

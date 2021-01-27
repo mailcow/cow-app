@@ -12,7 +12,7 @@ import sys
 import traceback
 import subprocess
 
-def get_vacation_vars(user):
+def get_vacation_vars(data):
     requirements = ["vacation","date","relational"]
 
     payload = {}
