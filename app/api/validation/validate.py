@@ -24,26 +24,27 @@ class CowValidate:
             raise False
 
         if schema["field_type"] in [list, dict]:
-            for v in value:
-
-                if v == "field_type":
-                    continue
+            for sub_value in value:
 
                 if schema["sub"]["field_type"] != dict:
-                    if not schema["sub"]["rules"](v):
+                    if not schema["sub"]["rules"](sub_value):
                         logger.error("Not validation")
                         raise False
                 else:
+                    for sub_key in schema["sub"].keys():
 
-                    if v not in schema["sub"].keys():
-                        raise False
+                        if sub_key == "field_type":
+                            continue
+
+                        if sub_key in sub_value:
+                            self._valid(schema["sub"][sub_key], sub_value[sub_key], depth)
 
                     depth += 1
-                    self._valid(schema["sub"], v, depth)
 
     def is_valid (self, content):
         if self.schema:
             acceptable_sections = self.schema.keys()
+
             for section_name, section_value in content.items():
 
                 if not section_name in acceptable_sections:
@@ -53,11 +54,11 @@ class CowValidate:
                 for schema_key, schema_value in self.schema[section_name].items():
 
                     try:
-                        if schema_value["required"] and not section_value.get(schema_key):
-                            logger.error("Missing arguments")
+                        if schema_value["required"] and section_value.get(schema_key, None) is None:
+                            logger.error(f"Missing arguments: {schema_key}")
                             raise False
 
-                        self._valid(schema_value, section_value)
+                        self._valid(schema_value, section_value.get(schema_key))
                     except:
                         return False
             return True
