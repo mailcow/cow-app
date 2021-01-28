@@ -68,14 +68,14 @@ schema = {
         "order": {
             "required": True,
             "field_type": int,
-            "rules": lambda i: (type(i) is int and i > 0)
+            "rules": lambda i: (type(i) is int and i >= 0)
         },
         "name": {
             "required": True,
             "field_type": str,
             "rules": lambda i: (type(i) is str and len(i) > 1 and len(i) < 128)
         },
-        "incoming_messages": {
+        "incoming_message": {
             "required": True,
             "field_type": str,
             "rules": lambda i: (type(i) is str and i in ["match_all_flowing_rules", "match_any_flowing_rules", "match_all"])
@@ -87,13 +87,13 @@ schema = {
             "sub": {
                 "field_type": dict, # dict: dict list | int: int list ..etc
                 # "rules" # Just use withour dict list
-                "section": {
+                "selector": {
                     "field_type": str,
-                    "rules": lambda i : (type(i) is str and i in ["subject", "from"])
+                    "rules": lambda i : (type(i) is str and i in ["subject", "from", "to", "cc", "to_or_cc", "size", "header", "body"])
                 },
-                "condidation": {
+                "condition": {
                     "field_type": str,
-                    "rules": lambda i : (type(i) is str and i in ["is", "is_not"])
+                    "rules": lambda i : (type(i) is str and i in ["is", "is_not", "contains", "does_not_contain", "matches", "does_not_match", "matches_regex", "does_not_match_regex"])
                 },
                 "value": {
                     "field_type": str,
@@ -114,7 +114,7 @@ schema = {
                 # "rules" # Just use withour dict list
                 "type": {
                     "field_type": str,
-                    "rules": lambda i: (type(i) is str and i in ["discard_message", "keep_message"])
+                    "rules": lambda i: (type(i) is str and i in ["discard_message", "keep_message", "stop_processing_filter", "forward_message_to", "send_reject_message", "file_message_in", "file_message_with"])
                 },
                 "to_email": {
                     "field_type": str,
@@ -122,11 +122,11 @@ schema = {
                 },
                 "folder": {
                     "field_type": str,
-                    "rules": lambda i: (type(i) is str and i in ["discard_message", "keep_message"])
+                    "rules": lambda i: (type(i) is str)
                 },
                 "file_width": {
                     "field_type": str,
-                    "rules": lambda i: (type(i) is str and i in ["seen", "deleted"])
+                    "rules": lambda i: (type(i) is str and i in ["seen", "deleted", "answered", "flagged", "junk", "not_junk", "work", "later", "important", "todo", "return_receipt_sent", "personal"])
                 },
                 "message": {
                     "field_type": str,
@@ -136,3 +136,5 @@ schema = {
         }
     }
 }
+
+
