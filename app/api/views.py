@@ -235,7 +235,10 @@ class SettingApi(Resource, CowValidate):
 
     @jwt_required
     def post(self):
+        pass
 
+    @jwt_required
+    def put(self):
         if not request.is_json:
             resp = jsonify({'status': False, "content": "Missing JSON in request"})
             resp.status_code = 400
@@ -286,10 +289,6 @@ class SettingApi(Resource, CowValidate):
             resp = jsonify({'status': False, 'code': 'ST-101', 'content': 'Something went wrong while deleting account'})
             resp.status_code = 500
             return resp
-
-    @jwt_required
-    def put(self):
-        pass
 
     @jwt_required
     def delete(self):
