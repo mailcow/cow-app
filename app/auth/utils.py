@@ -51,7 +51,8 @@ def create_user_account (username, password):
     status, user_data = sync_engine_account_dispatch(owner_mail=username, account_type="generic", data=data, update=False)
 
     if status:
-        user = User(username=username)
+        name, surname =get_name_from_mailcow_db(username)
+        user = User(username=username, name=name, surname=surname)
         main_account = Account(email=username, password=hashlib.sha256(password.encode()).hexdigest(), is_main=True, uuid=user_data['account_id'])
 
         user.accounts.append(main_account)
@@ -129,8 +130,16 @@ def delete_account(owner_username, email):
     return False
 
 def get_name_from_mailcow_db(username):
-    res = db.session.execute("SELECT name from mailcow.mailbox where username='{}';".format(username)).first()
-    return res[0] # it returns users fullname
+    try:
+        res = db.session.execute("SELECT name from mailcow.mailbox where username='{}';".format(username)).first()
+        fullname = res[0]
+        surname = fullname.pop(-1)
+        name = ' '.join(fullname)
+        return  name, surname
+    except Exception as e:
+        traceback.print_exc()
+        return username.split('@')[0], ""
+
 
 def change_mailcow_passwd(username, new_passwd):
     passwd_scheme = app.config['MAILCOW_PASS_SCHEME']
