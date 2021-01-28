@@ -128,6 +128,10 @@ def delete_account(owner_username, email):
             return False
     return False
 
+def get_name_from_mailcow_db(username):
+    res = db.session.execute("SELECT name from mailcow.mailbox where username='{}';".format(username)).first()
+    return res[0] # it returns users fullname
+
 def change_mailcow_passwd(username, new_passwd):
     passwd_scheme = app.config['MAILCOW_PASS_SCHEME']
     hashed_passwd = ""
