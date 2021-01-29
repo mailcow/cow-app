@@ -3,7 +3,7 @@
 # Ahmet Küçük <ahmetkucuk4@gmail.com>
 # Zekeriya Akgül <zkry.akgul@gmail.com>
 
-from app import app
+from app import app, db
 from flask import Response, Blueprint, request, jsonify, session
 from app import httputils
 from app.api.models import User, Account, Settings
@@ -217,7 +217,8 @@ class SettingApi(Resource, CowValidate):
     @jwt_required
     def get(self):
         username = get_jwt_identity()
-        user_settings = Settings.query.join(User).filter(User.username == username).group_by(Settings.section).all()
+        user_settings = Settings.query.join(User).filter(User.username == username).group_by(Settings.setting_type).all()
+
         response = {}
         for setting in user_settings:
 
@@ -225,11 +226,14 @@ class SettingApi(Resource, CowValidate):
                 response[setting.section] = {}
 
             if not setting.setting_type in response[setting.section]:
-                response[setting.section][setting.setting_type] = {}
+                response[setting.section][setting.setting_type] = type(setting.value)() # list or dict
 
-            response[setting.section][setting.setting_type]["accounts"] = setting.accounts
-            response[setting.section][setting.setting_type]["enabled"] = setting.enabled
-            response[setting.section][setting.setting_type] = {**response[setting.section][setting.setting_type], **setting.value}
+            if type(setting.value) is list:
+                response[setting.section][setting.setting_type] = setting.value
+            else:
+                response[setting.section][setting.setting_type]["accounts"] = setting.accounts
+                response[setting.section][setting.setting_type]["enabled"] = setting.enabled
+                response[setting.section][setting.setting_type] = {**response[setting.section][setting.setting_type], **setting.value}
 
         return httputils.response(response, 200)
 
@@ -266,11 +270,23 @@ class SettingApi(Resource, CowValidate):
 
         try:
             for setting_type, setting_value in content.items():
-                new_setting = Settings(section=section, setting_type=setting_type, value=setting_value)
-                user.settings.append(new_setting)
 
+                instance = Settings.query.filter_by(section=section, setting_type=setting_type).one_or_none()
+                if instance: # Update
+                    user_setting = instance
+                else: # First Create
+                    user_setting = Settings(section=section, setting_type=setting_type)
+
+                user_setting.enabled = False
+                user_setting.value = setting_value
+                user.settings.append(user_setting)
+
+                if 'enabled' in setting_value and type(setting_value['enabled']) is bool:
+                    user_setting.enabled = setting_value['enabled']
+
+                user_setting.accounts = []
                 for setting_account in setting_accounts:
-                    new_setting.accounts.append(setting_account)
+                    user_setting.accounts.append(setting_account)
 
                 db.session.commit()
 
@@ -278,12 +294,14 @@ class SettingApi(Resource, CowValidate):
                     need_refresh = True
 
             if need_refresh:
-                create_sieve_script()
+                pass
+                # create_sieve_script()
 
             resp = jsonify({'status': True, 'code': 'ST-100', 'content': 'Successfully saved'})
             resp.status_code = 200
             return resp
         except Exception as e:
+            import sys
             db.session.rollback()
             traceback.print_exc(file=sys.stderr)
             resp = jsonify({'status': False, 'code': 'ST-101', 'content': 'Something went wrong while deleting account'})

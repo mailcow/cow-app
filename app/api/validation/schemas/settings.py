@@ -16,6 +16,11 @@ schema = {
         }
     },
     "email-vocation": {
+        "enabled": {
+            "required": True,
+            "field_type": bool,
+            "rules": lambda i: type(i) is bool
+        },
         "subject": {
             "required": True,
             "field_type": str,
@@ -31,7 +36,7 @@ schema = {
             "field_type": str,
             "rules": lambda i: (type(i) is str and len(i) > 1 and len(i) < 1024)
         },
-        "dont_send_respnses": {
+        "dont_send_respnse": {
             "required": False,
             "field_type": bool,
             "rules": lambda i: type(i) is bool
@@ -58,6 +63,20 @@ schema = {
         }
     },
     "email-forward": {
+        "enabled": {
+            "required": True,
+            "field_type": bool,
+            "rules": lambda i: type(i) is bool
+        },
+        "emails": {
+            "required": True,
+            "field_type": list,
+            "rules": lambda i : type(i) is list,
+            "sub": {
+                "field_type": str,
+                "rules": lambda i: (type(i) is str and EMAIL_REGEX.match(i))
+            }
+        },
         "keep_a_copy": {
             "required": False,
             "field_type": bool,

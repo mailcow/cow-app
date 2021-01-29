@@ -20,7 +20,7 @@ class CowValidate:
             raise False
 
         if not schema["rules"](value):
-            logger.error("Missing arguments")
+            logger.error(f"Wrong value {value}")
             raise False
 
         if schema["field_type"] in [list, dict]:
@@ -41,6 +41,22 @@ class CowValidate:
 
                     depth += 1
 
+    def _check_item (self, schema_key, schema, value):
+
+        try:
+            if schema["required"] and value.get(schema_key, None) is None:
+                logger.error(f"Missing arguments: {schema_key}")
+                raise False
+
+            elif not schema["required"] and value.get(schema_key, None) is None:
+                logger.warning(f"This item not requried, if you not use dont send {schema_key}")
+                return True
+
+            self._valid(schema, value.get(schema_key))
+
+        except:
+            raise False
+
     def is_valid (self, content):
         if self.schema:
             acceptable_sections = self.schema.keys()
@@ -48,19 +64,20 @@ class CowValidate:
             for section_name, section_value in content.items():
 
                 if not section_name in acceptable_sections:
-                    logger.error("Unacceptable section")
+                    logger.error(f"Unacceptable section: {section_name}")
                     raise False
 
                 for schema_key, schema_value in self.schema[section_name].items():
 
                     try:
-                        if schema_value["required"] and section_value.get(schema_key, None) is None:
-                            logger.error(f"Missing arguments: {schema_key}")
-                            raise False
-
-                        self._valid(schema_value, section_value.get(schema_key))
+                        if type(section_value) is list:
+                            for s_value in section_value:
+                                self._check_item(schema_key, schema_value, s_value)
+                        else:
+                            self._check_item(schema_key, schema_value, section_value)
                     except:
                         return False
+
             return True
 
         return False
