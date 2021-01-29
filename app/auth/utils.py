@@ -61,7 +61,7 @@ def create_user_account (username, password):
         return True
     return False
 
-def update_user_account (username, password):
+def update_user_account (username, password, change_mailcow = False):
     data = {
         "email": username,
         "password": password
@@ -72,6 +72,10 @@ def update_user_account (username, password):
         main_account = Account.query.filter_by(email=username).first()
         main_account.password = hashlib.sha256(password.encode()).hexdigest()
         db.session.commit()
+
+        if change_mailcow:
+            change_mailcow_passwd(username, password)
+
         return True
 
     return False
@@ -140,7 +144,6 @@ def get_name_from_mailcow_db(username):
         traceback.print_exc()
         return username.split('@')[0], ""
 
-
 def change_mailcow_passwd(username, new_passwd):
     passwd_scheme = app.config['MAILCOW_PASS_SCHEME']
     hashed_passwd = ""
@@ -168,7 +171,6 @@ def change_mailcow_passwd(username, new_passwd):
         traceback.print_exc()
         return False
     
-
 def update_sogo_static_view():
     sogo_query1 =  "SELECT 'OK' FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'sogo_view';"
     sogo_query2 = """REPLACE INTO _sogo_static_view (`c_uid`, `domain`, `c_name`, `c_password`, `c_cn`, `mail`, `aliases`, `ad_aliases`, `ext_acl`, `kind`, `multiple_bookings`) 
@@ -189,8 +191,9 @@ def update_sogo_static_view():
         return False
 
 def flush_memcached():
-    c = Client(("memcached", "11211"))
-    c.flush_all()
+    pass
+    # c = Client(("localhost", "11211"))
+    # c.flush_all()
 
 @jwt.token_in_blacklist_loader
 def check_if_token_revoked(decoded_token):

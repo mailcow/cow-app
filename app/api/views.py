@@ -7,7 +7,7 @@ from app import app, db
 from flask import Response, Blueprint, request, jsonify, session
 from app import httputils
 from app.api.models import User, Account, Settings
-from app.auth.utils import login_smtp, create_imap_account, create_gmail_account, create_microsoft_account, delete_account
+from app.auth.utils import login_smtp, update_user_account, create_imap_account, create_gmail_account, create_microsoft_account, delete_account
 from app.api.utils import create_sieve_script
 from app.api.validation.validate import CowValidate
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_current_user
@@ -239,7 +239,34 @@ class SettingApi(Resource, CowValidate):
 
     @jwt_required
     def post(self):
-        pass
+        if not request.is_json:
+            resp = jsonify({'status': False, "content": "Missing JSON in request"})
+            resp.status_code = 400
+            return resp
+
+        body = request.get_json()
+        username = get_jwt_identity()
+        old_password = body.get('old_password')
+        new_password = body.get('new_password')
+
+        if not old_password or not new_password:
+            resp = jsonify({'status': False, "code": 100})
+            resp.status_code = 400
+            return resp
+
+        smtp_status, res_code = login_smtp(username, old_password)
+        if smtp_status:
+            status = update_user_account(username, new_password, True)
+            if status:
+                return httputils.response({'status': True}, 200)
+        else:
+            resp = jsonify({'status': False, "code": 101})
+            resp.status_code = 400
+            return resp
+
+        resp = jsonify({'status': False,  "code": 102})
+        resp.status_code = 400
+        return resp
 
     @jwt_required
     def put(self):
