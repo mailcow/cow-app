@@ -5,6 +5,7 @@ from time import sleep
 from sqlalchemy.orm.exc import NoResultFound
 from flask_jwt_extended import decode_token
 from pymemcache.client.base import Client
+from flask import session
 
 from app import app, db, jwt
 from app.auth.exceptions import TokenNotFound
@@ -66,19 +67,27 @@ def update_user_account (username, password, change_mailcow = False):
         "email": username,
         "password": password
     }
-    status, user_data = sync_engine_account_dispatch(owner_mail=username, account_type="generic", data=data, update=True)
 
-    if status:
+    try:
+        if change_mailcow:
+            ret = change_mailcow_passwd(username, password)
+            if not ret:
+                raise False
+            
+        status, user_data = sync_engine_account_dispatch(owner_mail=username, account_type="generic", data=data, update=True)
+        
+        if not status:
+            raise False
+
         main_account = Account.query.filter_by(email=username).first()
         main_account.password = hashlib.sha256(password.encode()).hexdigest()
         db.session.commit()
-
-        if change_mailcow:
-            change_mailcow_passwd(username, password)
-
-        return True
-
-    return False
+        session['main_user'] = data
+        return True    
+       
+    except Exception as e:
+        db.session.rollback()
+        return False
 
 def create_imap_account (owner_username, email, password, data):
     status, user_data = sync_engine_account_dispatch(owner_mail=owner_username, update=False, data=data, account_type="generic")
@@ -183,7 +192,6 @@ def update_sogo_static_view():
         if result_count != 0:
             db.session.execute(sogo_query2)
             db.session.execute(sogo_query3)
-            db.session.commit()
         flush_memcached()
         return True
     except Exception as e:
