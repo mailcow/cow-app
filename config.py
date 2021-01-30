@@ -16,6 +16,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 # Flask settings
 SECRET_KEY = 'fgh7Ax809A8w16cv89as1ygASf7y8ASfg78g234'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
 # should be the hostname of your project
 HOST = os.environ.get('HOST', '0.0.0.0') 
