@@ -191,9 +191,8 @@ def update_sogo_static_view():
         return False
 
 def flush_memcached():
-    pass
-    # c = Client(("localhost", "11211"))
-    # c.flush_all()
+    c = Client(("memcached", "11211"))
+    c.flush_all()
 
 @jwt.token_in_blacklist_loader
 def check_if_token_revoked(decoded_token):
