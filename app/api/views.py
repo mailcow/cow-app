@@ -338,3 +338,12 @@ class SettingApi(Resource, CowValidate):
     @jwt_required
     def delete(self):
         pass
+
+class DovecotWebhookApi(Resource):
+
+    name = "dovecothook"
+
+    def post(self):
+        logger = logging.getLogger('werkzeug')
+        a = request.form 
+        logger.info(a)
