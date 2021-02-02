@@ -4,6 +4,8 @@ from time import sleep
 
 from sqlalchemy.orm.exc import NoResultFound
 from flask_jwt_extended import decode_token
+from pymemcache.client.base import Client
+from flask import session
 
 from app import app, db, jwt
 from app.auth.exceptions import TokenNotFound
@@ -12,6 +14,9 @@ from app.auth.models import Token
 from app.api.models import User, Account
 
 import hashlib
+import base64
+import bcrypt
+import uuid
 import traceback
 
 def login_smtp(username, password, smtp_host=None, smtp_port=None):
@@ -47,7 +52,8 @@ def create_user_account (username, password):
     status, user_data = sync_engine_account_dispatch(owner_mail=username, account_type="generic", data=data, update=False)
 
     if status:
-        user = User(username=username)
+        name, surname =get_name_from_mailcow_db(username)
+        user = User(username=username, name=name, surname=surname)
         main_account = Account(email=username, password=hashlib.sha256(password.encode()).hexdigest(), is_main=True, uuid=user_data['account_id'])
 
         user.accounts.append(main_account)
@@ -56,20 +62,32 @@ def create_user_account (username, password):
         return True
     return False
 
-def update_user_account (username, password):
+def update_user_account (username, password, change_mailcow = False):
     data = {
         "email": username,
         "password": password
     }
-    status, user_data = sync_engine_account_dispatch(owner_mail=username, account_type="generic", data=data, update=True)
 
-    if status:
+    try:
+        if change_mailcow:
+            ret = change_mailcow_passwd(username, password)
+            if not ret:
+                raise False
+            
+        status, user_data = sync_engine_account_dispatch(owner_mail=username, account_type="generic", data=data, update=True)
+        
+        if not status:
+            raise False
+
         main_account = Account.query.filter_by(email=username).first()
         main_account.password = hashlib.sha256(password.encode()).hexdigest()
         db.session.commit()
-        return True
-
-    return False
+        session['main_user'] = data
+        return True    
+       
+    except Exception as e:
+        db.session.rollback()
+        return False
 
 def create_imap_account (owner_username, email, password, data):
     status, user_data = sync_engine_account_dispatch(owner_mail=owner_username, update=False, data=data, account_type="generic")
@@ -123,7 +141,66 @@ def delete_account(owner_username, email):
             traceback.print_exc()
             return False
     return False
-        
+
+def get_name_from_mailcow_db(username):
+    try:
+        res = db.session.execute("SELECT name from mailcow.mailbox where username='{}';".format(username)).first()
+        fullname = res[0]
+        surname = fullname.pop(-1)
+        name = ' '.join(fullname)
+        return  name, surname
+    except Exception as e:
+        traceback.print_exc()
+        return username.split('@')[0], ""
+
+def change_mailcow_passwd(username, new_passwd):
+    passwd_scheme = app.config['MAILCOW_PASS_SCHEME']
+    hashed_passwd = ""
+    if passwd_scheme == "SSHA":
+        salt = (uuid.uuid4().hex[:8]).encode()
+        shaHH = hashlib.sha1((new_passwd.encode() + salt)).digest() + salt
+        hashed_passwd = "{SSHA}" + base64.b64encode(shaHH).decode()
+    elif passwd_scheme == "SSHA256":
+        salt = (uuid.uuid4().hex[:8]).encode()
+        shaHH = hashlib.sha256((new_passwd.encode() + salt)).digest() + salt
+        hashed_passwd = "{SSHA256}" + base64.b64encode(shaHH).decode()
+    elif passwd_scheme == "SSHA512":
+        salt = (uuid.uuid4().hex[:8]).encode()
+        shaHH = hashlib.sha512((new_passwd.encode() + salt)).digest() + salt
+        hashed_passwd = "{SSHA512}" + base64.b64encode(shaHH).decode()
+    elif passwd_scheme == "BLF-CRYPT":
+        hashed_passwd = "{BLF-CRYPT}" + bcrypt.hashpw(new_passwd.encode(), bcrypt.gensalt()).decode()
+    
+    try:
+        db.session.execute("UPDATE mailbox SET password='{}' where username='{}'".format(hashed_passwd, username))
+        if not app.config['SKIP_SOGO']:
+            return update_sogo_static_view()
+        return True
+    except Exception as e:
+        traceback.print_exc()
+        return False
+    
+def update_sogo_static_view():
+    sogo_query1 =  "SELECT 'OK' FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'sogo_view';"
+    sogo_query2 = """REPLACE INTO _sogo_static_view (`c_uid`, `domain`, `c_name`, `c_password`, `c_cn`, `mail`, `aliases`, `ad_aliases`, `ext_acl`, `kind`, `multiple_bookings`) 
+    SELECT `c_uid`, `domain`, `c_name`, `c_password`, `c_cn`, `mail`, `aliases`, `ad_aliases`, `ext_acl`, `kind`, `multiple_bookings` 
+    from sogo_view"""
+    sogo_query3 = "DELETE FROM _sogo_static_view WHERE `c_uid` NOT IN (SELECT `username` FROM `mailbox` WHERE `active` = '1');"
+    
+    try:
+        result_count = db.session.execute(sogo_query1).fetchall()
+        if result_count != 0:
+            db.session.execute(sogo_query2)
+            db.session.execute(sogo_query3)
+        flush_memcached()
+        return True
+    except Exception as e:
+        traceback.print_exc()
+        return False
+
+def flush_memcached():
+    c = Client(("memcached", "11211"))
+    c.flush_all()
 
 @jwt.token_in_blacklist_loader
 def check_if_token_revoked(decoded_token):

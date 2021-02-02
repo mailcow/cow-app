@@ -16,6 +16,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 # Flask settings
 SECRET_KEY = 'fgh7Ax809A8w16cv89as1ygASf7y8ASfg78g234'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
 # should be the hostname of your project
 HOST = os.environ.get('HOST', '0.0.0.0') 
@@ -62,6 +63,10 @@ SYNC_ENGINE_WEB_PROTO = os.environ.get('SYNC_ENGINE_WEB_PROTO', 'http')
 SYNC_ENGINE_HOST = os.environ.get('SYNC_ENGINE_HOST', 'syncengine')
 SYNC_ENGINE_PORT = os.environ.get('SYNC_ENGINE_PORT', '5555')
 SYNC_ENGINE_API_URL = "{}://{}:{}".format(SYNC_ENGINE_WEB_PROTO, SYNC_ENGINE_HOST, SYNC_ENGINE_PORT)
+
+# Sogo 
+SKIP_SOGO = (os.environ.get('SKIP_SOGO', 'n') == 'y')
+MAILCOW_PASS_SCHEME = os.environ.get('MAILCOW_PASS_SCHEME', 'BLF-CRYPT')
 
 if DB == 'sqlite':
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, DB_NAME + '.db')

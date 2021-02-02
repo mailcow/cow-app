@@ -2,6 +2,7 @@ from app import app, db, jwt
 from app.api.models import User, Account, Settings
 from app.sieve_templates.template import Template
 from flask import render_template
+from flask import session
 from sievelib.managesieve import Client
 from sievelib.factory import FiltersSet
 from sievelib.parser import Parser
@@ -11,7 +12,7 @@ import sys
 import traceback
 import subprocess
 
-def get_vacation_vars(user):
+def get_vacation_vars(data):
     requirements = ["vacation","date","relational"]
 
     payload = {}
@@ -160,7 +161,16 @@ def get_forward_vars(data):
 
     return payload, requirements
 
-def create_sieve_script(username, password):
+def create_sieve_script():
+
+    main_user = session.get('main_user', None)
+
+    if not main_user:
+        raise False
+
+    username = main_user['email']
+    password = main_user['password']
+
     user = User.query.filter(User.username == username).first()
 
     # Get user vacation Settings

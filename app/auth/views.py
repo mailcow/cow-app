@@ -78,6 +78,7 @@ class LoginApi(Resource):
             refresh_token = create_refresh_token(identity=email)
             expires_date = datetime.datetime.now() + expires
             session['account'] = {'id': user.main_account.id, 'username': email, 'mail-uuid': user.main_account.uuid}
+            session['main_user'] = {'email': email, 'password': password}
 
             # Store the tokens in our store with a status of not currently revoked.
             add_token_to_database(access_token)
@@ -95,7 +96,7 @@ class LoginApi(Resource):
             resp =  jsonify({'status': False, 'code': 'MC-104', 'content': 'Something went be wrong, please try again later'})
             resp.status_code = 500
             return resp
-            
+
 class RefreshTokenApi(Resource):
 
     @jwt_refresh_token_required
