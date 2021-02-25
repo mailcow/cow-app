@@ -44,11 +44,12 @@ class CowValidate:
     def _check_item (self, schema_key, schema, value):
 
         try:
-            if schema["required"] and value.get(schema_key, None) is None:
+            s_value = value.get(schema_key, None)
+            if schema["required"] and s_value is None:
                 logger.error(f"Missing arguments: {schema_key}")
                 raise False
 
-            elif not schema["required"] and value.get(schema_key, None) is None:
+            elif not schema["required"] and  s_value is None or s_value == "":
                 logger.warning(f"This item not requried, if you not use dont send {schema_key}")
                 return True
 
@@ -65,7 +66,7 @@ class CowValidate:
 
                 if not section_name in acceptable_sections:
                     logger.error(f"Unacceptable section: {section_name}")
-                    raise False
+                    return False
 
                 for schema_key, schema_value in self.schema[section_name].items():
 
