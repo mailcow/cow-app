@@ -33,9 +33,9 @@ discard;
 {%- endif -%}
 
 {%- if vars.forward_settings -%}
-{%- for mail in vars.forward_settings.target_emails -%}
+{% for mail in vars.forward_settings.target_emails %}
 redirect "{{ mail }}";
-{%- endfor -%}
+{% endfor %}
 {%- if vars.forward_settings.keep_copy -%}
 keep;
 {%- endif -%}
