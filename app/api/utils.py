@@ -10,28 +10,31 @@ from io import StringIO
 
 import sys
 import traceback
+import json
 import subprocess
 
 def get_vacation_vars(data):
     requirements = ["vacation","date","relational"]
 
     payload = {}
-    payload["enabled"] = data.get('enabled', True)
-    # Date Settings
-    payload["daysBetweenResponse"] = data.get('daysBetweenResponse', 7)
-    payload["startDateEnabled"] = data.get('startDateEnabled', False)
-    payload["startDate"] = data.get('startDate')
-    payload["endDateEnabled"] = data.get('endDateEnabled', False)
-    payload["endDate"] = data.get('endDate')
+    payload["enabled"] = data.enabled
+
+    vacation_data = data.value
+
+    payload["daysBetweenResponse"] = vacation_data.get('days_beetwen_response', 7)
+    payload["startDateEnabled"] = vacation_data.get('enable_auto_reply', False)
+    payload["startDate"] = vacation_data.get('enable_reply_on', '')
+    payload["endDateEnabled"] = vacation_data.get('disable_auto_reply', False)
+    payload["endDate"] = vacation_data.get('disable_reply_on', '')
     # Sending/Recieving options
-    payload["ignoreLists"] = data.get('ignoreLists', False)
-    payload["alwaysSend"] = data.get('alwaysSend', True)
-    payload["discardMails"] = data.get('discardMails')
+    payload["ignoreLists"] = vacation_data.get('ignore_lists', False)
+    payload["alwaysSend"] = vacation_data.get('always_vacation_message_response', True)
+    payload["discardMails"] = vacation_data.get('discard_incoming_mails', False)
     #  Content options
-    payload["customSubjectEnabled"] = data.get('customSubjectEnabled', False)
-    payload["customSubject"] = data.get('customSubject', False)
-    payload["autoReplyText"] = data.get('autoReplyText')
-    payload["autoReplyEmailAddresses"] = ', '.join('"{0}"'.format(mail_addr) for mail_addr in data.get('autoReplyEmailAddresses'))
+    payload["customSubjectEnabled"] = (vacation_data.get('subject', False) != False)
+    payload["customSubject"] = vacation_data.get('subject', False)
+    payload["autoReplyText"] = vacation_data.get('message', '')
+    payload["autoReplyEmailAddresses"] = ', '.join('"{0}"'.format(mail_addr['email']) for mail_addr in vacation_data.get('accounts'))
     payload["conditions_enabled"] =  (payload["startDateEnabled"] or payload["endDateEnabled"] or payload["ignoreLists"])
 
     if payload["conditions_enabled"]:
@@ -49,10 +52,11 @@ def get_vacation_vars(data):
     return [payload, requirements]
 
 def get_filter_vars(data):
+
     filter_match_types = {
-        "anyof": "anyof",
-        "allof": "allof",
-        "all": "all",
+        "match_any_flowing_rules": "anyof",
+        "match_all_flowing_rules": "allof",
+        "match_all": "all",
     }
 
     filter_sections = {
@@ -75,6 +79,13 @@ def get_filter_vars(data):
         "is_over": ":under",
     }
 
+    filter_negative_conditions = {
+        "is_not": ":is",
+        "does_not_contain": ":contains",
+        "does_not_match": ":matches",
+        "does_not_match_regex": ":regex"
+    }
+
     filter_section_conditions = {
         "subject": lambda x: [x],
         "from": lambda x: [x],
@@ -87,42 +98,62 @@ def get_filter_vars(data):
     }
 
     filter_actions = {
-        "discard": "discard",
-        "keep": "keep",
-        "stop_filter_proc": "stop",
-        "forward_to": "redirect",
-        "send_reject_msg": "reject",
-        "fileinto": "fileinto"
+        "discard_message": "discard",
+        "keep_message": "keep",
+        "stop_processing_filter": "stop",
+        "forward_message_to": "redirect",
+        "send_reject_message": "reject",
+        "file_message_in": "fileinto"
     }
 
-    filters = data.get("content")
+    action_value_map = {
+        "forward_message_to": "to_email",
+        "send_reject_message": "message",
+        "file_message_in": "folder"
+    }
+
+    filters = data.value
 
     raw_filter = ""
-    for i in range(len(filters.keys())):
-        filter= filters[i]
-        filter_name = filter.get("filter_name")
-        enabled = filter.get("enabled")
-        rules = filter.get("rules")
-        actions = filter.get("actions")
-        matchtype = filter_match_types[filter.get("match_with")]
+    fs = FiltersSet("cow")
+    filters = sorted(filters, key=lambda f: f['order'])
+    for s_filter in filters:# range(len(filters.keys())):
+        # filter= filters[i]
+        filter_name = s_filter.get("name")
+        enabled = True # s_filter.get("enabled") TODO :: 
+        rules = s_filter.get("conditions")
+        actions = s_filter.get("actions")
+        matchtype = filter_match_types[s_filter.get("incoming_message")]
 
-        fs = FiltersSet(filter_name)
         builded_conditions = []
-        for rule_number in range(len(rules.keys())):
-            rule = rules[rule_number]
-            negated = rule["negated"]
-            section = filter_sections[rule["section"]]
+        for rule in rules: # range(len(rules.keys())):
+            # rule = rules[rule_number]
+            negated = False
+            section = filter_sections[rule["selector"]]
+            if "not" in rule["condition"]:
+                negated = True
+                condition = filter_negative_conditions[rule["condition"]]
+            else:
+                condition = filter_conditions[rule["condition"]]
+
+            condition = filter_section_conditions[section](condition)
+
             if negated:
                 section = "not{}".format(section)
-            condition = filter_conditions[rule["condition"]]
-            condition = filter_section_conditions[section](condition)
+
             value = rule["value"]
+   
             builded_conditions.append((section, *condition, value))
 
         builded_actions = []
-        for action_number in range(len(actions.keys())):
-            action = actions[action_number]
-            builded_actions.append((filter_actions[action["name"]], action["param"]))
+        actions = sorted(actions, key=lambda f: f['order'])
+        for action in actions:# range(len(actions.keys())):
+            # action = actions[action_number]
+            param = ""
+            if action["type"] in action_value_map.keys():
+                param = action[action_value_map[action["type"]]]
+            # if value_map=[]
+            builded_actions.append((filter_actions[action["type"]], param))
 
         if matchtype == "all":
             p = Parser()
@@ -137,29 +168,36 @@ def get_filter_vars(data):
             p.parse(raw)
             fs.from_parser_result(p)
         else:
-            fs.addfilter(name=filter_name, conditions=builded_conditions, actions=builded_actions, matchtype="allof")
+            fs.addfilter(name=filter_name, conditions=builded_conditions, actions=builded_actions, matchtype=matchtype)
 
     requirements = fs.requires
     io = StringIO()
     fs.tosieve(io)
     raw_sieve = io.getvalue()
-    raw_sieve = '\n'.join(raw_sieve.splitlines()[2:])
+    if requirements:
+        raw_sieve = '\n'.join(raw_sieve.splitlines()[2:])
+
+    if "not" in raw_sieve:
+        for key in filter_sections.keys():
+            raw_sieve = raw_sieve.replace("not" + key, key)
+
     return [raw_sieve, requirements]
 
 def get_forward_vars(data):
     """
     data = {
-        "target_emails": ["abc@example.com", "def@example.com"], # List
-        "keep_copy": True # Boolean 
+        "emails": ["abc@example.com", "def@example.com"], # List
+        "keep_a_copy": True # Boolean 
     }
     """
-    requirements = ""
-
+    requirements = []
+    forward_data = data.value
     payload = {}
-    payload["target_mails"] = data.get("target_emails", )
-    payload["keep_copy"] = data.get("keep_copy", False)
 
-    return payload, requirements
+    payload["target_emails"] = forward_data.get("emails")
+    payload["keep_copy"] = forward_data.get("keep_a_copy", False)
+
+    return [payload, requirements]
 
 def create_sieve_script():
 
@@ -174,13 +212,13 @@ def create_sieve_script():
     user = User.query.filter(User.username == username).first()
 
     # Get user vacation Settings
-    vacation_settings = (Settings.query.filter(Settings.enabled == True).filter(Settings.section == "mail").filter(Settings.setting_type == "vacation").first()) or False
+    vacation_settings = (Settings.query.filter(Settings.enabled == True).filter(Settings.section == "email").filter(Settings.setting_type == "email-vacation").first()) or False
 
     # Get user filter settings
-    filter_settings = (Settings.query.filter(Settings.enabled == True).filter(Settings.section == "mail").filter(Settings.setting_type == "filter").first()) or False
+    filter_settings = (Settings.query.filter(Settings.section == "email").filter(Settings.setting_type == "email-filters").first()) or False
 
     # Get user forwarding settings
-    forward_settings = (Settings.query.filter(Settings.enabled == True).filter(Settings.section == "mail").filter(Settings.setting_type == "forward").first()) or False
+    forward_settings = (Settings.query.filter(Settings.enabled == True).filter(Settings.section == "email").filter(Settings.setting_type == "email-forward").first()) or False
 
     sieve_payload = {}
     sieve_reqs = []
@@ -211,6 +249,8 @@ def create_sieve_script():
     client = Client(app.config['IMAP_HOST'])
     client.connect(username, password, starttls=True, authmech="PLAIN")
     script = Template("cowui.sieve", sieve_payload).render()
+
+
     client.setactive("")
     client.deletescript("cowui")
     client.putscript("cowui", script)
