@@ -72,7 +72,7 @@ class Settings(Base):
     enabled = db.Column(db.Boolean, default=False)
     accounts = db.relationship("Account", secondary=AccountSettings, lazy='subquery', backref="account_settings")
     section = db.Column(db.Text, nullable=False) # mail|calender|contact|profile
-    setting_type = db.Column(db.Text, nullable=False) # vocation|filter|signiture etc.
+    setting_type = db.Column(db.Text, nullable=False) # vacation|filter|signiture etc.
     value = db.Column(mysql.JSON, nullable=False)
 
     def __repr__(self):
