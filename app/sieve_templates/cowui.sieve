@@ -1,4 +1,6 @@
+{%- if vars.requirements -%}
 require [{{ vars.requirements }}];
+{%- endif -%}
 
 {%- set filters_applied = namespace(val=False) -%}
 {%- if vars.vacation_settings and not vars.vacation_settings["alwaysSend"] and vars.filter_settings -%}

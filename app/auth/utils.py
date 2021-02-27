@@ -152,7 +152,7 @@ def delete_account(owner_username, email):
 
 def get_name_from_mailcow_db(username):
     try:
-        res = db.session.execute("SELECT name from mailcow.mailbox where username='{}';".format(username)).first()
+        res = db.session.execute("SELECT name from mailcow.mailbox where username='{}';".format(username)).first().split(" ")
         fullname = res[0]
         surname = fullname.pop(-1)
         name = ' '.join(fullname)
