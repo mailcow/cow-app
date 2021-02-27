@@ -238,7 +238,7 @@ class SettingApi(Resource, CowValidate):
             if type(setting.value) is list:
                 response[setting.section][setting.setting_type] = setting.value
             else:
-                response[setting.section][setting.setting_type]["accounts"] = setting.accounts
+                response[setting.section][setting.setting_type]["accounts"] = setting.get_accounts
                 response[setting.section][setting.setting_type]["enabled"] = setting.enabled
                 response[setting.section][setting.setting_type] = {**response[setting.section][setting.setting_type], **setting.value}
 

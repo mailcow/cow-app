@@ -11,7 +11,7 @@ from app import app, db, jwt
 from app.auth.exceptions import TokenNotFound
 from app.auth.services import sync_engine_account_dispatch, sync_engine_delete_account
 from app.auth.models import Token
-from app.api.models import User, Account
+from app.api.models import User, Account, Settings
 
 import hashlib
 import base64
@@ -52,14 +52,22 @@ def create_user_account (username, password):
     status, user_data = sync_engine_account_dispatch(owner_mail=username, account_type="generic", data=data, update=False)
 
     if status:
-        name, surname =get_name_from_mailcow_db(username)
-        user = User(username=username, name=name, surname=surname)
-        main_account = Account(email=username, password=hashlib.sha256(password.encode()).hexdigest(), is_main=True, uuid=user_data['account_id'])
+        try:
+            name, surname =get_name_from_mailcow_db(username)
+            user = User(username=username, name=name, surname=surname)
+            main_account = Account(email=username, password=hashlib.sha256(password.encode()).hexdigest(), is_main=True, uuid=user_data['account_id'])
+            for settings_type in [('email', 'email-filters'),('email', 'email-vacation'),('email', 'email-forward')]:
+                new_settings = Settings(enabled=True, section=settings_type[0], setting_type=settings_type[1], value={})
+                new_settings.accounts.append(main_account)
+                user.settings.append(new_settings)
 
-        user.accounts.append(main_account)
-        db.session.add(user)
-        db.session.commit()
-        return True
+            user.accounts.append(main_account)
+            db.session.add(user)
+            db.session.commit()
+            return True
+        except:
+            db.session.rollback()
+            return False
     return False
 
 def update_user_account (username, password, change_mailcow = False):

@@ -77,3 +77,10 @@ class Settings(Base):
 
     def __repr__(self):
         return '<UserSettings %s %s>' % (self.section, self.setting_type)
+    
+    @property
+    def get_accounts(self):
+        ret = []
+        for account in self.accounts:
+            ret.append({"email": account.email, "id": account.id, "is_main": account.is_main})
+        return ret
