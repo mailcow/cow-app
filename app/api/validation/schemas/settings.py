@@ -15,16 +15,16 @@ schema = {
             "rules": lambda i: (type(i) is str and i in ["1m" ,"5m", "10m", "30m", "1h"])
         }
     },
-    "email-vocation": {
+    "email-vacation": {
         "enabled": {
             "required": True,
             "field_type": bool,
             "rules": lambda i: type(i) is bool
         },
         "subject": {
-            "required": True,
+            "required": False,
             "field_type": str,
-            "rules": lambda i: (type(i) is str and len(i) > 1 and len(i) < 128)
+            "rules": lambda i: (type(i) is str and len(i) > 0 and len(i) < 128)
         },
         "days_beetwen_response": {
             "required": True,
@@ -36,7 +36,7 @@ schema = {
             "field_type": str,
             "rules": lambda i: (type(i) is str and len(i) > 1 and len(i) < 1024)
         },
-        "dont_send_respnse": {
+        "ignore_lists": {
             "required": False,
             "field_type": bool,
             "rules": lambda i: type(i) is bool
@@ -44,14 +44,14 @@ schema = {
         "enable_reply_on": {
             "required": False,
             "field_type": "str",
-            "rules": lambda i: (type(i) is str and len(i) == 12)
+            "rules": lambda i: (type(i) is str and len(i) > 0 and len(i) < 64)
         },
         "disable_reply_on": {
             "required": False,
             "field_type": "str",
-            "rules": lambda i: (type(i) is str and len(i) == 12)
+            "rules": lambda i: (type(i) is str and len(i) > 0 and len(i) < 64)
         },
-        "always_vocation_message_response": {
+        "always_vacation_message_response": {
             "required": False,
             "field_type": bool,
             "rules": lambda i: type(i) is bool
@@ -112,7 +112,7 @@ schema = {
                 },
                 "condition": {
                     "field_type": str,
-                    "rules": lambda i : (type(i) is str and i in ["is", "is_not", "contains", "does_not_contain", "matches", "does_not_match", "matches_regex", "does_not_match_regex"])
+                    "rules": lambda i : (type(i) is str and i in ["is", "is_not", "is_under", "is_over", "contains", "does_not_contain", "matches", "does_not_match", "matches_regex", "does_not_match_regex"])
                 },
                 "value": {
                     "field_type": str,

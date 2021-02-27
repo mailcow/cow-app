@@ -72,8 +72,15 @@ class Settings(Base):
     enabled = db.Column(db.Boolean, default=False)
     accounts = db.relationship("Account", secondary=AccountSettings, lazy='subquery', backref="account_settings")
     section = db.Column(db.Text, nullable=False) # mail|calender|contact|profile
-    setting_type = db.Column(db.Text, nullable=False) # vocation|filter|signiture etc.
+    setting_type = db.Column(db.Text, nullable=False) # vacation|filter|signiture etc.
     value = db.Column(mysql.JSON, nullable=False)
 
     def __repr__(self):
         return '<UserSettings %s %s>' % (self.section, self.setting_type)
+    
+    @property
+    def get_accounts(self):
+        ret = []
+        for account in self.accounts:
+            ret.append({"email": account.email, "id": account.id, "is_main": account.is_main})
+        return ret

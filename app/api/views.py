@@ -17,7 +17,7 @@ import os
 import requests
 import traceback
 
-REFRESH_REQUIRED_TYPES = ["email-filter", "email-vacation", "email-forward"]
+REFRESH_REQUIRED_TYPES = ["email-filters", "email-vacation", "email-forward"]
 
 API_LIST = [
     "send",
@@ -29,7 +29,8 @@ API_LIST = [
     "labels",
     "messages",
     "threads",
-    "contacts"
+    "contacts",
+    "files"
 ]
 
 class MailApi(Resource):
@@ -76,6 +77,12 @@ class MailApi(Resource):
         requests_args['headers'] = headers
         requests_args['params'] = params
         requests_args['auth'] = requests.auth.HTTPBasicAuth(account['mail-uuid'], '')
+        file = request.files.get('file')
+
+        if file and "files" in api_name:
+            del headers['Content-Type']
+            requests_args['data'] = {}
+            requests_args['files'] = {'file': (file.filename, file, file.mimetype)}
 
         response = requests.request(request.method, URL, **requests_args)
 
@@ -231,7 +238,7 @@ class SettingApi(Resource, CowValidate):
             if type(setting.value) is list:
                 response[setting.section][setting.setting_type] = setting.value
             else:
-                response[setting.section][setting.setting_type]["accounts"] = setting.accounts
+                response[setting.section][setting.setting_type]["accounts"] = setting.get_accounts
                 response[setting.section][setting.setting_type]["enabled"] = setting.enabled
                 response[setting.section][setting.setting_type] = {**response[setting.section][setting.setting_type], **setting.value}
 
@@ -317,12 +324,13 @@ class SettingApi(Resource, CowValidate):
 
                 db.session.commit()
 
+                print ("####", setting_type)
+
                 if setting_type in REFRESH_REQUIRED_TYPES:
                     need_refresh = True
 
             if need_refresh:
-                pass
-                # create_sieve_script()
+                create_sieve_script()
 
             resp = jsonify({'status': True, 'code': 'ST-100', 'content': 'Successfully saved'})
             resp.status_code = 200
