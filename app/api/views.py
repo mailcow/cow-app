@@ -304,12 +304,12 @@ class SettingApi(Resource, CowValidate):
 
         try:
             for setting_type, setting_value in content.items():
+                user_setting = Settings.query.filter_by(section=section, setting_type=setting_type, user_id=user.id).one_or_none()
 
-                instance = Settings.query.filter_by(section=section, setting_type=setting_type).one_or_none()
-                if instance: # Update
-                    user_setting = instance
-                else: # First Create
-                    user_setting = Settings(section=section, setting_type=setting_type)
+                if not user_setting:
+                    resp = jsonify({'status': False, "content": "Setting not found"})
+                    resp.status_code = 404
+                    return resp
 
                 user_setting.enabled = False
                 user_setting.value = setting_value
