@@ -57,7 +57,7 @@ def create_user_account (username, password):
             user = User(username=username, name=name, surname=surname)
             main_account = Account(email=username, password=hashlib.sha256(password.encode()).hexdigest(), is_main=True, uuid=user_data['account_id'])
             for settings_type in [('email', 'email-filters', []),('email', 'email-vacation', {}),('email', 'email-forward', {})]:
-                new_settings = Settings(enabled=False, section=settings_type[0], setting_type=settings_type[1], value=setting_type[2])
+                new_settings = Settings(enabled=False, section=settings_type[0], setting_type=settings_type[1], value=settings_type[2])
                 new_settings.accounts.append(main_account)
                 user.settings.append(new_settings)
 
@@ -66,6 +66,8 @@ def create_user_account (username, password):
             db.session.commit()
             return True
         except:
+            traceback.print_exc()
+            sync_engine_delete_account(user_data['account_id'])
             db.session.rollback()
             return False
     return False
