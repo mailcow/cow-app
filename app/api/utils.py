@@ -212,13 +212,13 @@ def create_sieve_script():
     user = User.query.filter(User.username == username).first()
 
     # Get user vacation Settings
-    vacation_settings = (Settings.query.filter(Settings.enabled == True).filter(Settings.section == "email").filter(Settings.setting_type == "email-vacation").first()) or False
+    vacation_settings = (Settings.query.filter(Settings.user_id == user.id).filter(Settings.enabled == True).filter(Settings.section == "email").filter(Settings.setting_type == "email-vacation").first()) or False
 
     # Get user filter settings
-    filter_settings = (Settings.query.filter(Settings.section == "email").filter(Settings.setting_type == "email-filters").first()) or False
+    filter_settings = (Settings.query.filter(Settings.user_id == user.id).filter(Settings.section == "email").filter(Settings.setting_type == "email-filters").first()) or False
 
     # Get user forwarding settings
-    forward_settings = (Settings.query.filter(Settings.enabled == True).filter(Settings.section == "email").filter(Settings.setting_type == "email-forward").first()) or False
+    forward_settings = (Settings.query.filter(Settings.user_id == user.id).filter(Settings.enabled == True).filter(Settings.section == "email").filter(Settings.setting_type == "email-forward").first()) or False
 
     sieve_payload = {}
     sieve_reqs = []
@@ -249,7 +249,6 @@ def create_sieve_script():
     client = Client(app.config['IMAP_HOST'])
     client.connect(username, password, starttls=True, authmech="PLAIN")
     script = Template("cowui.sieve", sieve_payload).render()
-
 
     client.setactive("")
     client.deletescript("cowui")
