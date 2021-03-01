@@ -56,7 +56,11 @@ def create_user_account (username, password):
             name, surname =get_name_from_mailcow_db(username)
             user = User(username=username, name=name, surname=surname)
             main_account = Account(email=username, password=hashlib.sha256(password.encode()).hexdigest(), is_main=True, uuid=user_data['account_id'])
-            for settings_type in [('email', 'email-filters', []),('email', 'email-vacation', {}),('email', 'email-forward', {})]:
+            initial_settings = [('email', 'email-filters', []),
+                                ('email', 'email-vacation', {}),
+                                ('email', 'email-forward', {}),
+                                ('email', 'email-general', {"accounts": [], "auto_refresh_every": "30m", "browser_notification": True, "enabled": False})]
+            for settings_type in initial_settings:
                 new_settings = Settings(enabled=False, section=settings_type[0], setting_type=settings_type[1], value=settings_type[2])
                 new_settings.accounts.append(main_account)
                 user.settings.append(new_settings)
