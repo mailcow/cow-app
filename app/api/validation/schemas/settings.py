@@ -84,6 +84,11 @@ schema = {
         }
     },
     "email-filters": {
+        "id": {
+            "required": True,
+            "field_type": str,
+            "rules": lambda i: (type(i) is str and len(i) > 1 and len(i) < 128)
+        },
         "order": {
             "required": True,
             "field_type": int,
