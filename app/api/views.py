@@ -323,7 +323,7 @@ class SettingApi(Resource, CowValidate):
                     user_setting.accounts.append(setting_account)
 
                 db.session.commit()
-
+                
                 if setting_type in REFRESH_REQUIRED_TYPES:
                     need_refresh = True
 
